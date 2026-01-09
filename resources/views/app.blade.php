@@ -6,6 +6,7 @@
     <title>Lara JS</title>
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/emoji-mart@latest/dist/emoji-mart.css">
     <link rel="stylesheet" href="css/app.css">
 </head>
 
@@ -47,6 +48,10 @@
                     <div class="d-flex align-items-center gap-3 mb-2">
                         <button class="btn btn-light border" onclick="chooseImage()">📷</button>
                         <button class="btn btn-light border" onclick="chooseVideo()">🎥</button>
+                        <div class="emoji-wrapper position-relative">
+                            <button type="button" class="btn btn-light border" onclick="toggleEmoji(event)">😊</button>
+                            <div id="emojiPicker" class="emoji-picker d-none"></div>
+                        </div>
                         <input type="file" id="imageInput" accept="image/*" multiple hidden onchange="uploadImage(this)">
                         <input type="file" id="videoInput" accept="video/*" hidden onchange="uploadVideo(this)">
                     </div>
@@ -57,7 +62,7 @@
                 </div>
                 <div class="modal-footer">
                     <button class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
-                    <button class="btn btn-primary" onclick="createPost()">Đăng</button>
+                    <button class="btn btn-primary" onclick="createPost()">Đăng</button>    
                 </div>
             </div>
         </div>
@@ -66,6 +71,7 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.ckeditor.com/ckeditor5/41.3.0/classic/ckeditor.js"></script>
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/emoji-mart@latest/dist/browser.js"></script>
 
     <script>
         const token = localStorage.getItem("token");
@@ -196,6 +202,7 @@
         let lastPreviewUrl;
         let uploadedVideo;
         let uploadedImages = [];
+        let emojiPickerVisible = false;
 
         document.addEventListener("DOMContentLoaded", () => {
             postModal = new bootstrap.Modal(
@@ -247,10 +254,42 @@
             })
             .catch(console.error);
 
-            postModal._element.addEventListener('hidden.bs.modal', () => {
-                linkPreview = null;
-                document.getElementById('linkPreview').classList.add('d-none');
+            const picker = new EmojiMart.Picker({
+                onEmojiSelect: (emoji) => {
+                    insertEmoji(emoji.native);
+                },
+                theme: 'light',
+                previewPosition: 'none',
+                skinTonePosition: 'none'
             });
+
+            document.getElementById('emojiPicker').appendChild(picker);
+
+            postModal._element.addEventListener('hidden.bs.modal', () => {
+                editor.setData('');
+                uploadedImages = [];
+                uploadedVideo = null;
+                linkPreview = null;
+                lastPreviewUrl = null;
+
+                document.getElementById('imagePreview').innerHTML = '';
+                document.getElementById('videoPreview').classList.add('d-none');
+                document.getElementById('linkPreview').classList.add('d-none');
+                document.getElementById('emojiPicker').classList.add('d-none');
+                emojiPickerVisible = false;
+            });
+        });
+
+        document.addEventListener('click', (e) => {
+            const picker = document.getElementById('emojiPicker');
+            const emojiBtn = e.target.closest('button');
+
+            if (!picker || picker.classList.contains('d-none')) return;
+
+            if (picker.contains(e.target) || emojiBtn?.innerText === '😊') return;
+
+            picker.classList.add('d-none');
+            emojiPickerVisible = false;
         });
 
         // Hàm mở modal tạo bài viết
@@ -431,6 +470,25 @@
 
             box.classList.add('d-none');
             box.innerHTML = '';
+        }
+
+        // Hàm chèn emoji vào trình soạn thảo
+        function insertEmoji(emoji) {
+            editor.model.change(writer => {
+                const textNode = writer.createText(emoji);
+                editor.model.insertContent(
+                    textNode,
+                    editor.model.document.selection
+                );
+            });
+        }
+
+        // Hàm chèn emoji vào trình soạn thảo
+        function toggleEmoji(e) {
+            e.stopPropagation();
+            const picker = document.getElementById('emojiPicker');
+            emojiPickerVisible = !emojiPickerVisible;
+            picker.classList.toggle('d-none', !emojiPickerVisible);
         }
 
     </script>
