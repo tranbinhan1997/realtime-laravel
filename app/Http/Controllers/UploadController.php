@@ -15,25 +15,21 @@ class UploadController extends Controller
             'upload' => 'required|image|max:5120'
         ]);
 
-       $image = Image::make($request->file('upload'))
-        ->resize(1200, null, function ($c) {
-            $c->aspectRatio();
-            $c->upsize();
-        })
-        ->encode('jpg', 85);
+        $image = Image::make($request->file('upload'))
+            ->resize(1200, null, function ($c) {
+                $c->aspectRatio();
+                $c->upsize();
+            })
+            ->encode('jpg', 85);
 
         $name = uniqid() . '.jpg';
-        Storage::disk('public')->put("posts/$name", $image);
+        $path = "posts/$name";
 
-        $url = asset("storage/posts/$name");
-
-        PostImage::create([
-            'user_id' => auth()->id(),
-            'url' => $url
-        ]);
+        Storage::disk('public')->put($path, $image);
 
         return response()->json([
-            'url' => $url
+            'url'  => asset('storage/' . $path),
+            'path' => $path
         ]);
     }
 

@@ -47,10 +47,11 @@
                     <div class="d-flex align-items-center gap-3 mb-2">
                         <button class="btn btn-light border" onclick="chooseImage()">📷</button>
                         <button class="btn btn-light border" onclick="chooseVideo()">🎥</button>
-                        <input type="file" id="imageInput" accept="image/*" hidden onchange="uploadImage(this)">
+                        <input type="file" id="imageInput" accept="image/*" multiple hidden onchange="uploadImage(this)">
                         <input type="file" id="videoInput" accept="video/*" hidden onchange="uploadVideo(this)">
                     </div>
                     <textarea id="postContent"></textarea>
+                    <div id="imagePreview" class="d-flex flex-wrap gap-2 mt-2"></div>
                     <div id="videoPreview" class="d-none mt-2"></div>
                     <div id="linkPreview" class="border rounded p-2 mt-2 d-none"></div>
                 </div>
@@ -148,14 +149,9 @@
                         <strong>${post.user}</strong>
                         <small class="text-muted"> · ${post.time}</small>
                         <div class="mt-2 post-content">${post.content}</div>
+                        ${renderImages(post.images)}
                         ${renderLink(post.link)}
-                        ${post.video ? `
-                            <div class="post-video mt-2">
-                                <video controls>
-                                    <source src="${post.video}">
-                                </video>
-                            </div>
-                        ` : ''}
+                        ${renderVideo(post.video)}
                     </div>
                 </div>` + feed.innerHTML;
         }
@@ -163,7 +159,7 @@
         // Hàm tạo bài viết mới
         async function createPost() {
             const content = editor.getData().trim();
-            if (!content) return;
+            if (!content && !uploadedImages.length && !uploadedVideo) return;
 
             await fetch("/api/posts", {
                 method: "POST",
@@ -174,13 +170,17 @@
                 },
                 body: JSON.stringify({
                     content,
+                    images: uploadedImages.map(i => i.path),
                     link: linkPreview,
                     video: uploadedVideo
                 })
             });
 
             editor.setData("");
+            uploadedImages = [];
             uploadedVideo = null;
+            clearLinkPreview();
+            document.getElementById('imagePreview').innerHTML = '';
             document.getElementById('videoPreview').classList.add('d-none');
             postModal.hide();
         }
@@ -195,6 +195,7 @@
         let linkPreview;
         let lastPreviewUrl;
         let uploadedVideo;
+        let uploadedImages = [];
 
         document.addEventListener("DOMContentLoaded", () => {
             postModal = new bootstrap.Modal(
@@ -270,34 +271,53 @@
 
         // Hàm upload ảnh lên server
         async function uploadImage(input) {
-            const file = input.files[0];
-            if (!file) return;
+            const files = [...input.files];
+            if (!files.length) return;
 
-            const form = new FormData();
-            form.append('upload', file);
+            for (const file of files) {
+                const form = new FormData();
+                form.append('upload', file);
 
-            const res = await fetch('/api/upload-image', {
-                method: 'POST',
-                headers: {
-                    Authorization: 'Bearer ' + token
-                },
-                body: form
-            });
-
-            const data = await res.json();
-
-            editor.model.change(writer => {
-                const imageElement = writer.createElement('imageBlock', {
-                    src: data.url
+                const res = await fetch('/api/upload-image', {
+                    method: 'POST',
+                    headers: {
+                        Authorization: 'Bearer ' + token
+                    },
+                    body: form
                 });
 
-                editor.model.insertContent(
-                    imageElement,
-                    editor.model.document.selection
-                );
-            });
+                const data = await res.json();
 
+                uploadedImages.push(data);
+            }
+
+            renderImagePreview();
             input.value = '';
+        }
+
+        // Hàm render preview ảnh trên modal tạo bài viết
+        function renderImagePreview() {
+            const box = document.getElementById('imagePreview');
+            box.innerHTML = '';
+
+            uploadedImages.forEach((img, index) => {
+                box.innerHTML += `
+                    <div class="position-relative">
+                        <img src="${img.url}"
+                            style="width:120px;height:120px;object-fit:cover"
+                            class="rounded">
+
+                        <button class="btn btn-sm btn-danger position-absolute top-0 end-0"
+                                onclick="removeImage(${index})">×</button>
+                    </div>
+                `;
+            });
+        }
+
+        // Hàm Xóa preview ảnh trên modal tạo bài viết
+        function removeImage(index) {
+            uploadedImages.splice(index, 1);
+            renderImagePreview();
         }
 
         // Hàm upload video lên server
@@ -368,6 +388,35 @@
                             ${new URL(link.url).hostname}
                         </div>
                     </div>
+                </div>
+            `;
+        }
+
+        // Hàm render hình ảnh trong bài viết
+        function renderImages(images = []) {
+            if (!images.length) return '';
+
+            return `
+                <div class="post-images mt-2 d-grid gap-2"
+                    style="grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));">
+                    ${images.map(src => `
+                        <img src="${src}"
+                            class="rounded"
+                            style="width:100%;object-fit:cover;max-height:300px">
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        // Hàm render video trong bài viết
+        function renderVideo(video) {
+            if (!video) return '';
+
+            return `
+                <div class="post-video mt-2">
+                    <video controls class="w-100 rounded" style="max-height:400px">
+                        <source src="${video}">
+                    </video>
                 </div>
             `;
         }

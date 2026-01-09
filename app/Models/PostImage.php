@@ -12,7 +12,7 @@ class PostImage extends Model
     protected $fillable = [
         'post_id',
         'user_id',
-        'url'
+        'image_path'
     ];
 
     public function post()

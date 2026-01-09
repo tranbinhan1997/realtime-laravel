@@ -17,7 +17,7 @@ class CreatePostImagesTable extends Migration
             $table->id();
             $table->foreignId('post_id')->nullable()->constrained()->nullOnDelete();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-            $table->string('url');
+            $table->string('image_path');
             $table->timestamps();
         });
     }

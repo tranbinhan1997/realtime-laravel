@@ -11,7 +11,7 @@ class PostController extends Controller
 {
     public function index()
     {
-        return Post::with('user')
+        return Post::with(['user', 'images'])
         ->limit(20)
         ->get()
         ->map(function ($p) {
@@ -20,6 +20,9 @@ class PostController extends Controller
                 'user' => $p->user->name,
                 'content' => $p->content,
                 'time' => $p->created_at->diffForHumans(),
+                'images' => $p->images->map(function ($img) {
+                    return asset('storage/' . $img->image_path);
+                }),
                 'video' => $p->video_path ? asset('storage/' . $p->video_path) : null,
                 'link' => $p->link_url ? [
                     'url' => $p->link_url,
@@ -49,9 +52,13 @@ class PostController extends Controller
             'link_image' => $request->link['image'] ?? null,
         ]);
 
-        PostImage::where('user_id', auth()->id())
-            ->whereNull('post_id')
-            ->update(['post_id' => $post->id]);
+        foreach ($request->images ?? [] as $path) {
+            PostImage::create([
+                'post_id' => $post->id,
+                'user_id' => auth()->id(),
+                'image_path' => $path
+            ]);
+        }
 
 
         $payload = [
@@ -59,6 +66,9 @@ class PostController extends Controller
             'user' => $post->user->name,
             'content' => $post->content,
             'time' => $post->created_at->diffForHumans(),
+            'images' => $post->images->map(function ($img) {
+                return asset('storage/' . $img->image_path);
+            }),
             'video' => $post->video_path ? asset('storage/' . $post->video_path): null,
             'link' => $link ? [
                 'url' => $post->link_url,
