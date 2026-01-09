@@ -6,55 +6,7 @@
     <title>Lara JS</title>
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        .dot {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            background: #adb5bd;
-            display: inline-block;
-        }
-
-        .dot.online {
-            background: #28a745;
-        }
-
-        .ck-editor__editable {
-            min-height: 100px;
-        }
-
-        .post-content figure.image {
-            max-width: 100%;
-            margin: 8px auto;
-            text-align: center;
-        }
-
-        .post-content figure.image img {
-            max-width: 100%;
-            max-height: 500px;
-            width: auto;
-            height: auto;
-            border-radius: 8px;
-            object-fit: contain;
-            display: inline-block;
-        }
-
-        .input-post {
-            cursor: pointer;
-            width: 70%;
-            margin: 0 auto;
-            border-radius: 50px;
-        }
-
-        .link-preview img {
-            display: block;
-        }
-
-        .link-preview:hover {
-            background: #f8f9fa;
-        }
-
-    </style>
+    <link rel="stylesheet" href="css/app.css">
 </head>
 
 <body class="bg-light">
@@ -94,9 +46,12 @@
                 <div class="modal-body">
                     <div class="d-flex align-items-center gap-3 mb-2">
                         <button class="btn btn-light border" onclick="chooseImage()">📷</button>
-                        <input type="file" id="imageInput" accept="image/*"hidden onchange="uploadImage(this)">
+                        <button class="btn btn-light border" onclick="chooseVideo()">🎥</button>
+                        <input type="file" id="imageInput" accept="image/*" hidden onchange="uploadImage(this)">
+                        <input type="file" id="videoInput" accept="video/*" hidden onchange="uploadVideo(this)">
                     </div>
                     <textarea id="postContent"></textarea>
+                    <div id="videoPreview" class="d-none mt-2"></div>
                     <div id="linkPreview" class="border rounded p-2 mt-2 d-none"></div>
                 </div>
                 <div class="modal-footer">
@@ -194,6 +149,13 @@
                         <small class="text-muted"> · ${post.time}</small>
                         <div class="mt-2 post-content">${post.content}</div>
                         ${renderLink(post.link)}
+                        ${post.video ? `
+                            <div class="post-video mt-2">
+                                <video controls>
+                                    <source src="${post.video}">
+                                </video>
+                            </div>
+                        ` : ''}
                     </div>
                 </div>` + feed.innerHTML;
         }
@@ -210,10 +172,16 @@
                     Authorization: "Bearer " + token,
                     Accept: "application/json"
                 },
-                body: JSON.stringify({ content, link: linkPreview })
+                body: JSON.stringify({
+                    content,
+                    link: linkPreview,
+                    video: uploadedVideo
+                })
             });
 
             editor.setData("");
+            uploadedVideo = null;
+            document.getElementById('videoPreview').classList.add('d-none');
             postModal.hide();
         }
 
@@ -226,6 +194,7 @@
         let postModal;
         let linkPreview;
         let lastPreviewUrl;
+        let uploadedVideo;
 
         document.addEventListener("DOMContentLoaded", () => {
             postModal = new bootstrap.Modal(
@@ -294,6 +263,11 @@
             document.getElementById('imageInput').click();
         }
 
+        // Hàm chọn video từ máy tính
+        function chooseVideo() {
+            document.getElementById('videoInput').click();
+        }
+
         // Hàm upload ảnh lên server
         async function uploadImage(input) {
             const file = input.files[0];
@@ -322,6 +296,36 @@
                     editor.model.document.selection
                 );
             });
+
+            input.value = '';
+        }
+
+        // Hàm upload video lên server
+        async function uploadVideo(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            const form = new FormData();
+            form.append('video', file);
+
+            const res = await fetch('/api/upload-video', {
+                method: 'POST',
+                headers: {
+                    Authorization: 'Bearer ' + token
+                },
+                body: form
+            });
+
+            const data = await res.json();
+            uploadedVideo = data;
+
+            const box = document.getElementById('videoPreview');
+            box.classList.remove('d-none');
+            box.innerHTML = `
+                <video controls class="w-100 rounded">
+                    <source src="${data.url}">
+                </video>
+            `;
 
             input.value = '';
         }

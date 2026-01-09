@@ -36,4 +36,18 @@ class UploadController extends Controller
             'url' => $url
         ]);
     }
+
+    public function uploadVideo(Request $request)
+    {
+        $request->validate([
+            'video' => 'required|mimes:mp4,webm|max:51200'
+        ]);
+
+        $path = $request->file('video')->store('videos', 'public');
+
+        return response()->json([
+            'url' => asset('storage/' . $path),
+            'path' => $path
+        ]);
+    }
 }

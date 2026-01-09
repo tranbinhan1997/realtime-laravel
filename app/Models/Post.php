@@ -12,6 +12,7 @@ class Post extends Model
     protected $fillable = [
         'user_id',
         'content',
+        'video_path',
         'link_url',
         'link_title',
         'link_desc',

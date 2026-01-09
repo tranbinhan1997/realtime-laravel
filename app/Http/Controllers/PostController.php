@@ -20,6 +20,7 @@ class PostController extends Controller
                 'user' => $p->user->name,
                 'content' => $p->content,
                 'time' => $p->created_at->diffForHumans(),
+                'video' => $p->video_path ? asset('storage/' . $p->video_path) : null,
                 'link' => $p->link_url ? [
                     'url' => $p->link_url,
                     'title' => $p->link_title,
@@ -41,6 +42,7 @@ class PostController extends Controller
         $post = Post::create([
             'user_id' => auth()->id(),
             'content' => $request->content,
+            'video_path' => $request->video['path'] ?? null,
             'link_url' => $request->link['url'] ?? null,
             'link_title' => $request->link['title'] ?? null,
             'link_desc' => $request->link['desc'] ?? null,
@@ -57,6 +59,7 @@ class PostController extends Controller
             'user' => $post->user->name,
             'content' => $post->content,
             'time' => $post->created_at->diffForHumans(),
+            'video' => $post->video_path ? asset('storage/' . $post->video_path): null,
             'link' => $link ? [
                 'url' => $post->link_url,
                 'title' => $post->link_title,
