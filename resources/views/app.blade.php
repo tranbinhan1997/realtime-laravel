@@ -72,6 +72,7 @@
     <script src="https://cdn.ckeditor.com/ckeditor5/41.3.0/classic/ckeditor.js"></script>
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/emoji-mart@latest/dist/browser.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <script>
         const token = localStorage.getItem("token");
@@ -150,10 +151,29 @@
         // Hàm thêm bài viết vào feed
         function addPost(post) {
             feed.innerHTML =
-                `<div class="card mb-3">
+                `<div class="card mb-3" id="post-${post.id}">
                     <div class="card-body">
-                        <strong>${post.user}</strong>
-                        <small class="text-muted"> · ${post.time}</small>
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <strong>${post.user}</strong>
+                                <small class="text-muted"> · ${post.time}</small>
+                            </div>
+
+                            ${post.is_owner ? `
+                                <div class="dropdown">
+                                    <button class="btn btn-sm btn-light"
+                                        data-bs-toggle="dropdown">⋯</button>
+                                    <ul class="dropdown-menu dropdown-menu-end">
+                                        <li>
+                                            <button class="dropdown-item text-danger"
+                                                onclick="deletePost(${post.id})">
+                                                Xóa bài viết
+                                            </button>
+                                        </li>
+                                    </ul>
+                                </div>
+                            ` : ''}
+                        </div>
                         <div class="mt-2 post-content">${post.content}</div>
                         ${renderImages(post.images)}
                         ${renderLink(post.link)}
@@ -192,6 +212,40 @@
         }
 
         socket.on("post:new", addPost);
+
+        // Hàm xóa bài viết
+        async function deletePost(id) {
+            const result = await Swal.fire({
+                title: 'Xóa bài viết?',
+                text: 'Bạn sẽ không thể khôi phục lại bài viết này.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Xóa',
+                cancelButtonText: 'Hủy'
+            });
+
+            if (!result.isConfirmed) return;
+
+            await fetch(`/api/posts/${id}`, {
+                method: 'DELETE',
+                headers: {
+                    Authorization: 'Bearer ' + token
+                }
+            });
+
+            Swal.fire({
+                icon: 'success',
+                title: 'Đã xóa',
+                timer: 1200,
+                showConfirmButton: false
+            });
+        }
+
+        socket.on('post:delete', data => {
+            document.getElementById(`post-${data.id}`)?.remove();
+        });
 
     </script>
 

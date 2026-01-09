@@ -21,8 +21,9 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::post('/posts', [PostController::class, 'store']);
     Route::get('/posts', [PostController::class, 'index']);
+    Route::delete('/posts/{post}', [PostController::class, 'destroy']);
     Route::post('/upload-image', [UploadController::class, 'upload']);
     Route::post('/preview-link', [LinkPreviewController::class, 'preview']);
-    Route::post('/upload-video', [UploadController::class, 'uploadVideo']);
+    Route::post('/upload-video', [UploadController::class, 'uploadVideo']); 
 });
 

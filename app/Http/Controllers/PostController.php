@@ -6,6 +6,7 @@ use App\Models\Post;
 use App\Models\PostImage;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 
 class PostController extends Controller
 {
@@ -18,6 +19,7 @@ class PostController extends Controller
             return [
                 'id' => $p->id,
                 'user' => $p->user->name,
+                'is_owner' => $p->user_id === auth()->id(),
                 'content' => $p->content,
                 'time' => $p->created_at->diffForHumans(),
                 'images' => $p->images->map(function ($img) {
@@ -64,6 +66,7 @@ class PostController extends Controller
         $payload = [
             'id' => $post->id,
             'user' => $post->user->name,
+            'is_owner' => true,
             'content' => $post->content,
             'time' => $post->created_at->diffForHumans(),
             'images' => $post->images->map(function ($img) {
@@ -81,5 +84,32 @@ class PostController extends Controller
         Http::post("http://localhost:3000/post", $payload);
 
         return $payload;
+    }
+
+    public function destroy(Post $post)
+    {
+        if ($post->user_id !== auth()->id()) {
+            abort(403);
+        }
+
+        foreach ($post->images as $img) {
+            Storage::disk('public')->delete($img->image_path);
+        }
+
+        $post->images()->delete();
+
+        if ($post->video_path) {
+            Storage::disk('public')->delete($post->video_path);
+        }
+
+        $post->delete();
+
+        Http::post("http://localhost:3000/post-delete", [
+            'id' => $post->id
+        ]);
+
+        return response()->json([
+            'success' => true
+        ]);
     }
 }
