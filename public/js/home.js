@@ -433,15 +433,10 @@ function renderImages(images = []) {
     if (!images.length) return '';
 
     return `
-        <div class="post-images mt-2 d-grid gap-2"
-            style="grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));">
-            ${images.map(img => `
-                        <img src="${typeof img === 'string' ? img : img.url}"
-                            class="rounded"
-                            style="width:100%;object-fit:cover;max-height:300px">
-                    `).join('')}
+        <div class="post-images count-${images.length}">
+            ${images.map(src => `<img src="${src}">`).join('')}
         </div>
-        `;
+    `;
 }
 
 // Hàm render video trong bài viết
