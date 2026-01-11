@@ -22,5 +22,5 @@ Route::get('/register', function () {
 });
 
 Route::get('/', function () {
-    return view('app');
+    return view('pages.home');
 });
