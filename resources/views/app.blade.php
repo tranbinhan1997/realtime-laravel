@@ -62,7 +62,7 @@
                 </div>
                 <div class="modal-footer">
                     <button class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
-                    <button class="btn btn-primary" onclick="createPost()">Đăng</button>    
+                    <button class="btn btn-primary" id="postSubmitBtn" onclick="submitPost()">Đăng</button>
                 </div>
             </div>
         </div>
@@ -165,6 +165,12 @@
                                         data-bs-toggle="dropdown">⋯</button>
                                     <ul class="dropdown-menu dropdown-menu-end">
                                         <li>
+                                            <button class="dropdown-item"
+                                                onclick="openEditPost(${post.id})">
+                                                Chỉnh sửa
+                                            </button>
+                                        </li>
+                                        <li>
                                             <button class="dropdown-item text-danger"
                                                 onclick="deletePost(${post.id})">
                                                 Xóa bài viết
@@ -182,34 +188,77 @@
                 </div>` + feed.innerHTML;
         }
 
-        // Hàm tạo bài viết mới
-        async function createPost() {
+        async function submitPost() {
             const content = editor.getData().trim();
             if (!content && !uploadedImages.length && !uploadedVideo) return;
 
-            await fetch("/api/posts", {
-                method: "POST",
+            const payload = {
+                content,
+                images: uploadedImages.map(i => i.path),
+                link: linkPreview,
+                video: uploadedVideo
+            };
+
+            const url = editingPostId
+                ? `/api/posts/${editingPostId}`
+                : `/api/posts`;
+
+            const method = editingPostId ? 'PUT' : 'POST';
+
+            const res = await fetch(url, {
+                method,
                 headers: {
                     "Content-Type": "application/json",
                     Authorization: "Bearer " + token,
                     Accept: "application/json"
                 },
-                body: JSON.stringify({
-                    content,
-                    images: uploadedImages.map(i => i.path),
-                    link: linkPreview,
-                    video: uploadedVideo
-                })
+                body: JSON.stringify(payload)
             });
 
-            editor.setData("");
-            uploadedImages = [];
-            uploadedVideo = null;
-            clearLinkPreview();
-            document.getElementById('imagePreview').innerHTML = '';
-            document.getElementById('videoPreview').classList.add('d-none');
+            const post = await res.json();
+
+            document.getElementById(`post-${post.id}`)?.remove();
+            addPost(post);
+            resetPostModal();
             postModal.hide();
         }
+
+        socket.on('post:update', post => {
+            const el = document.getElementById(`post-${post.id}`);
+            if (!el) return;
+
+            el.remove();
+            addPost(post);
+        });
+
+        // // Hàm tạo bài viết mới
+        // async function createPost() {
+        //     const content = editor.getData().trim();
+        //     if (!content && !uploadedImages.length && !uploadedVideo) return;
+
+        //     await fetch("/api/posts", {
+        //         method: "POST",
+        //         headers: {
+        //             "Content-Type": "application/json",
+        //             Authorization: "Bearer " + token,
+        //             Accept: "application/json"
+        //         },
+        //         body: JSON.stringify({
+        //             content,
+        //             images: uploadedImages.map(i => i.path),
+        //             link: linkPreview,
+        //             video: uploadedVideo
+        //         })
+        //     });
+
+        //     editor.setData("");
+        //     uploadedImages = [];
+        //     uploadedVideo = null;
+        //     clearLinkPreview();
+        //     document.getElementById('imagePreview').innerHTML = '';
+        //     document.getElementById('videoPreview').classList.add('d-none');
+        //     postModal.hide();
+        // }
 
         socket.on("post:new", addPost);
 
@@ -247,6 +296,51 @@
             document.getElementById(`post-${data.id}`)?.remove();
         });
 
+        function openEditPost(id) {
+            const postEl = document.getElementById(`post-${id}`);
+            if (!postEl) return;
+
+            editingPostId = id;
+
+            document.querySelector('#postModal .modal-title').innerText = 'Chỉnh sửa bài viết';
+            document.getElementById('postSubmitBtn').innerText = 'Lưu';
+
+            const content = postEl.querySelector('.post-content').innerHTML;
+            editor.setData(content);
+
+            uploadedImages = [];
+            uploadedVideo = null;
+            clearLinkPreview();
+
+            postEl.querySelectorAll('.post-images img').forEach(img => {
+                uploadedImages.push({
+                    url: img.src,
+                    path: img.src.replace(
+                        window.location.origin + '/storage/',
+                        ''
+                    )
+                });
+            });
+
+            renderImagePreview();
+            postModal.show();
+        }
+
+        function resetPostModal() {
+            editingPostId = null;
+
+            editor.setData('');
+            uploadedImages = [];
+            uploadedVideo = null;
+            clearLinkPreview();
+
+            document.getElementById('imagePreview').innerHTML = '';
+            document.getElementById('videoPreview').classList.add('d-none');
+
+            document.querySelector('#postModal .modal-title').innerText = 'Tạo bài viết';
+            document.getElementById('postSubmitBtn').innerText = 'Đăng';
+        }
+
     </script>
 
     <script>
@@ -257,6 +351,7 @@
         let uploadedVideo;
         let uploadedImages = [];
         let emojiPickerVisible = false;
+        let editingPostId = null;
 
         document.addEventListener("DOMContentLoaded", () => {
             postModal = new bootstrap.Modal(
@@ -319,19 +414,6 @@
 
             document.getElementById('emojiPicker').appendChild(picker);
 
-            postModal._element.addEventListener('hidden.bs.modal', () => {
-                editor.setData('');
-                uploadedImages = [];
-                uploadedVideo = null;
-                linkPreview = null;
-                lastPreviewUrl = null;
-
-                document.getElementById('imagePreview').innerHTML = '';
-                document.getElementById('videoPreview').classList.add('d-none');
-                document.getElementById('linkPreview').classList.add('d-none');
-                document.getElementById('emojiPicker').classList.add('d-none');
-                emojiPickerVisible = false;
-            });
         });
 
         document.addEventListener('click', (e) => {
@@ -346,8 +428,21 @@
             emojiPickerVisible = false;
         });
 
-        // Hàm mở modal tạo bài viết
+        // Hàm mở modal tạo bài viết và chỉnh sửa
         function openPostModal() {
+            editingPostId = null;
+
+            editor.setData('');
+            uploadedImages = [];
+            uploadedVideo = null;
+            clearLinkPreview();
+
+            document.getElementById('imagePreview').innerHTML = '';
+            document.getElementById('videoPreview').classList.add('d-none');
+
+            document.querySelector('#postModal .modal-title').innerText = 'Tạo bài viết';
+            document.getElementById('postSubmitBtn').innerText = 'Đăng';
+
             postModal.show();
             setTimeout(() => editor?.editing.view.focus(), 300);
         }
@@ -492,8 +587,8 @@
             return `
                 <div class="post-images mt-2 d-grid gap-2"
                     style="grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));">
-                    ${images.map(src => `
-                        <img src="${src}"
+                    ${images.map(img => `
+                        <img src="${typeof img === 'string' ? img : img.url}"
                             class="rounded"
                             style="width:100%;object-fit:cover;max-height:300px">
                     `).join('')}

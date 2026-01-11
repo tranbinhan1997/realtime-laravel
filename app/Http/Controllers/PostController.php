@@ -86,6 +86,69 @@ class PostController extends Controller
         return $payload;
     }
 
+    public function update(Request $request, Post $post)
+    {
+        abort_if($post->user_id !== auth()->id(), 403);
+
+        $post->update([
+            'content' => $request->content,
+            'video_path' => $request->video['path'] ?? null,
+            'link_url'   => $request->link['url'] ?? null,
+            'link_title' => $request->link['title'] ?? null,
+            'link_desc'  => $request->link['desc'] ?? null,
+            'link_image' => $request->link['image'] ?? null,
+        ]);
+
+        $newImages = collect($request->images ?? [])
+            ->map(fn ($path) => str_replace(url('/storage').'/', '', $path))
+            ->values();
+
+        $oldImages = $post->images->pluck('image_path');
+
+        $imagesToDelete = $oldImages->diff($newImages);
+
+        foreach ($imagesToDelete as $path) {
+            Storage::disk('public')->delete($path);
+            $post->images()->where('image_path', $path)->delete();
+        }
+
+        $imagesToAdd = $newImages->diff($oldImages);
+
+        foreach ($imagesToAdd as $path) {
+            PostImage::create([
+                'post_id'    => $post->id,
+                'user_id'    => auth()->id(),
+                'image_path' => $path
+            ]);
+        }
+
+        $post->load(['user', 'images']);
+
+        $payload = [
+            'id' => $post->id,
+            'user' => $post->user->name,
+            'is_owner' => $post->user_id === auth()->id(),
+            'content' => $post->content,
+            'time' => now()->diffForHumans(),
+            'images' => $post->images->map(fn($img) =>
+                asset('storage/' . $img->image_path)
+            ),
+            'video' => $post->video_path
+                ? asset('storage/' . $post->video_path)
+                : null,
+            'link' => $post->link_url ? [
+                'url' => $post->link_url,
+                'title' => $post->link_title,
+                'desc' => $post->link_desc,
+                'image' => $post->link_image,
+            ] : null
+        ];
+
+        Http::post('http://127.0.0.1:3000/post-update', $payload);
+
+        return response()->json($payload);
+    }
+
     public function destroy(Post $post)
     {
         if ($post->user_id !== auth()->id()) {
