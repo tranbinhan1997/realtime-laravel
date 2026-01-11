@@ -6,17 +6,45 @@ let uploadedVideo;
 let uploadedImages = [];
 let emojiPickerVisible = false;
 let editingPostId = null;
+let nextPageUrl = '/api/posts';
+let isLoading = false;
 
+async function loadPosts() {
+    if (!nextPageUrl || isLoading) return;
 
-fetch("/api/posts", {
-    headers: {
-        Authorization: "Bearer " + token,
-        Accept: "application/json"
+    isLoading = true;
+    setLoading(true);
+
+    try {
+        const res = await fetch(nextPageUrl, {
+            headers: {
+                Authorization: 'Bearer ' + token,
+                Accept: 'application/json'
+            }
+        });
+
+        const json = await res.json();
+
+        json.data.forEach(addPost);
+        nextPageUrl = json.next_page;
+    } catch (e) {
+        console.error(e);
+    } finally {
+        isLoading = false;
+        setLoading(false);
     }
-})
-.then(r => r.json())
-.then(posts => {
-    posts.forEach(addPost);
+}
+
+loadPosts();
+
+document.addEventListener('scroll', () => {
+    const nearBottom =
+        window.innerHeight + window.scrollY >=
+        document.body.offsetHeight - 300;
+
+    if (nearBottom) {
+        loadPosts();
+    }
 });
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -97,47 +125,62 @@ document.addEventListener('click', (e) => {
     emojiPickerVisible = false;
 });
 
+function setLoading(show) {
+    document.getElementById('loading').classList.toggle('d-none', !show);
+}
+
 // Hàm thêm bài viết vào feed
-function addPost(post) {
+function addPost(post, { prepend = false } = {}) {
+    if (document.getElementById(`post-${post.id}`)) return;
+
     const isOwner = post.author_id === currentUserId;
 
-    feed.innerHTML =
-        `<div class="card mb-3" id="post-${post.id}">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-start">
-                            <div>
-                                <strong>${post.user}</strong>
-                                <small class="text-muted"> · ${post.time}</small>
-                            </div>
-
-                            ${isOwner ? `
-                                <div class="dropdown">
-                                    <button class="btn btn-sm btn-light"
-                                        data-bs-toggle="dropdown">⋯</button>
-                                    <ul class="dropdown-menu dropdown-menu-end">
-                                        <li>
-                                            <button class="dropdown-item"
-                                                onclick="openEditPost(${post.id})">
-                                                Chỉnh sửa
-                                            </button>
-                                        </li>
-                                        <li>
-                                            <button class="dropdown-item text-danger"
-                                                onclick="deletePost(${post.id})">
-                                                Xóa bài viết
-                                            </button>
-                                        </li>
-                                    </ul>
-                                </div>
-                            ` : ''}
-                        </div>
-                        <div class="mt-2 post-content">${post.content}</div>
-                        ${renderImages(post.images)}
-                        ${renderLink(post.link)}
-                        ${renderVideo(post.video)}
+    const html = `
+        <div class="card mb-3" id="post-${post.id}">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <strong>${post.user}</strong>
+                        <small class="text-muted"> · ${post.time}</small>
                     </div>
-                </div>` + feed.innerHTML;
+
+                    ${isOwner ? `
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-light"
+                                data-bs-toggle="dropdown">⋯</button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li>
+                                    <button class="dropdown-item"
+                                        onclick="openEditPost(${post.id})">
+                                        Chỉnh sửa
+                                    </button>
+                                </li>
+                                <li>
+                                    <button class="dropdown-item text-danger"
+                                        onclick="deletePost(${post.id})">
+                                        Xóa bài viết
+                                    </button>
+                                </li>
+                            </ul>
+                        </div>
+                    ` : ''}
+                </div>
+
+                <div class="mt-2 post-content">${post.content}</div>
+                ${renderImages(post.images)}
+                ${renderLink(post.link)}
+                ${renderVideo(post.video)}
+            </div>
+        </div>
+    `;
+
+    if (prepend) {
+        feed.insertAdjacentHTML('afterbegin', html); // bài mới
+    } else {
+        feed.insertAdjacentHTML('beforeend', html); // bài cũ
+    }
 }
+
 
 // Hàm lưu bài viết
 async function submitPost() {
@@ -491,7 +534,9 @@ socket.on('post:update', post => {
     addPost(post);
 });
 
-socket.on("post:new", addPost);
+socket.on('post:new', post => {
+    addPost(post, { prepend: true });
+});
 
 socket.on('post:delete', data => {
     document.getElementById(`post-${data.id}`)?.remove();

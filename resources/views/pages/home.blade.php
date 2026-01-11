@@ -9,7 +9,6 @@
 @section('content')
 <div class="row vh-100">
     @include('partials.sidebar-left')
-
     <div class="col-md-8 p-4 overflow-auto">
         <div class="card mb-3">
             <div class="card-body">
@@ -17,6 +16,10 @@
             </div>
         </div>
         <div id="feed"></div>
+        <div id="loading" class="post-skeleton d-none">
+            <div class="skeleton-header"></div>
+            <div class="skeleton-body"></div>
+        </div>
     </div>
 
     @include('partials.sidebar-right')

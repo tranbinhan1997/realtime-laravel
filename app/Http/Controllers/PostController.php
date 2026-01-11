@@ -10,22 +10,25 @@ use Illuminate\Support\Facades\Storage;
 
 class PostController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        return Post::with(['user', 'images'])
-        ->limit(20)
-        ->get()
-        ->map(function ($p) {
+        $posts = Post::with(['user', 'images'])
+            ->latest()
+            ->simplePaginate(10);
+
+        $data = collect($posts->items())->map(function ($p) {
             return [
                 'id' => $p->id,
                 'user' => $p->user->name,
                 'author_id' => $p->user_id,
                 'content' => $p->content,
                 'time' => $p->created_at->diffForHumans(),
-                'images' => $p->images->map(function ($img) {
-                    return asset('storage/' . $img->image_path);
-                }),
-                'video' => $p->video_path ? asset('storage/' . $p->video_path) : null,
+                'images' => $p->images->map(fn ($img) =>
+                    asset('storage/' . $img->image_path)
+                ),
+                'video' => $p->video_path
+                    ? asset('storage/' . $p->video_path)
+                    : null,
                 'link' => $p->link_url ? [
                     'url' => $p->link_url,
                     'title' => $p->link_title,
@@ -34,6 +37,11 @@ class PostController extends Controller
                 ] : null
             ];
         });
+
+        return response()->json([
+            'data' => $data,
+            'next_page' => $posts->nextPageUrl()
+        ]);
     }
 
     public function store(Request $request)
