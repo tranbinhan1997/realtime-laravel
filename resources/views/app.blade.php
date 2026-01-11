@@ -302,6 +302,30 @@
                 });
             });
 
+            const videoEl = postEl.querySelector('.post-video video');
+
+            if (videoEl) {
+                uploadedVideo = {
+                    url: videoEl.querySelector('source').src,
+                    path: videoEl.querySelector('source').src.replace(
+                        window.location.origin + '/storage/',
+                        ''
+                    )
+                };
+
+                const box = document.getElementById('videoPreview');
+                box.classList.remove('d-none');
+                box.innerHTML = `
+                    <video controls class="w-100 rounded">
+                        <source src="${uploadedVideo.url}">
+                    </video>
+                `;
+            } else {
+                uploadedVideo = null;
+                document.getElementById('videoPreview').classList.add('d-none');
+            }
+
+
             renderImagePreview();
             postModal.show();
         }
@@ -349,8 +373,9 @@
             .then(e => {
                 editor = e;
                 editor.model.document.on('change:data', () => {
-                    const text = editor.getData();
-                    const match = text.match(/(https?:\/\/[^\s<]+\.[^\s<]+)/);
+                    const text = editor.getData().replace(/<[^>]+>/g, '');
+                    const urlRegex = /(https?:\/\/[^\s]+)/;
+                    const match = text.match(urlRegex);
 
                     if (!match) {
                         clearLinkPreview();

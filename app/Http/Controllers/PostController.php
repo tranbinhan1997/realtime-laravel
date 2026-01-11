@@ -19,7 +19,7 @@ class PostController extends Controller
             return [
                 'id' => $p->id,
                 'user' => $p->user->name,
-                'author_id' => $p->user_id === auth()->id(),
+                'author_id' => $p->user_id,
                 'content' => $p->content,
                 'time' => $p->created_at->diffForHumans(),
                 'images' => $p->images->map(function ($img) {
