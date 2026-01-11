@@ -75,15 +75,23 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <script>
-        const token = localStorage.getItem("token");
+        let socket;
+        let currentUserId = null;
+        let token = localStorage.getItem("token");
+
         if (!token) location.href = "/login";
 
         fetch("/api/auth/me", {
             headers: {
-                "Authorization": "Bearer " + token,
-                "Accept": "application/json"
+                Authorization: "Bearer " + token,
+                Accept: "application/json"
             }
-        }).then(r => r.json()).then(u => username.innerText = u.name);
+        })
+        .then(r => r.json())
+        .then(u => {
+            username.innerText = u.name;
+            currentUserId = u.id;
+        });
 
         const users = {};
 
@@ -100,7 +108,7 @@
             });
         }
 
-        const socket = io("http://localhost:3000", { auth: { token } });
+        socket = io("http://localhost:3000", { auth: { token } });
 
         // danh sách online ban đầu
         socket.on("presence:list", list => {
@@ -150,6 +158,8 @@
 
         // Hàm thêm bài viết vào feed
         function addPost(post) {
+            const isOwner = post.author_id === currentUserId;
+
             feed.innerHTML =
                 `<div class="card mb-3" id="post-${post.id}">
                     <div class="card-body">
@@ -159,7 +169,7 @@
                                 <small class="text-muted"> · ${post.time}</small>
                             </div>
 
-                            ${post.is_owner ? `
+                            ${isOwner ? `
                                 <div class="dropdown">
                                     <button class="btn btn-sm btn-light"
                                         data-bs-toggle="dropdown">⋯</button>
@@ -223,45 +233,6 @@
             postModal.hide();
         }
 
-        socket.on('post:update', post => {
-            const el = document.getElementById(`post-${post.id}`);
-            if (!el) return;
-
-            el.remove();
-            addPost(post);
-        });
-
-        // // Hàm tạo bài viết mới
-        // async function createPost() {
-        //     const content = editor.getData().trim();
-        //     if (!content && !uploadedImages.length && !uploadedVideo) return;
-
-        //     await fetch("/api/posts", {
-        //         method: "POST",
-        //         headers: {
-        //             "Content-Type": "application/json",
-        //             Authorization: "Bearer " + token,
-        //             Accept: "application/json"
-        //         },
-        //         body: JSON.stringify({
-        //             content,
-        //             images: uploadedImages.map(i => i.path),
-        //             link: linkPreview,
-        //             video: uploadedVideo
-        //         })
-        //     });
-
-        //     editor.setData("");
-        //     uploadedImages = [];
-        //     uploadedVideo = null;
-        //     clearLinkPreview();
-        //     document.getElementById('imagePreview').innerHTML = '';
-        //     document.getElementById('videoPreview').classList.add('d-none');
-        //     postModal.hide();
-        // }
-
-        socket.on("post:new", addPost);
-
         // Hàm xóa bài viết
         async function deletePost(id) {
             const result = await Swal.fire({
@@ -291,6 +262,15 @@
                 showConfirmButton: false
             });
         }
+
+        socket.on('post:update', post => {
+            const el = document.getElementById(`post-${post.id}`);
+            if (!el) return;
+            el.remove();
+            addPost(post);
+        });
+
+        socket.on("post:new", addPost);
 
         socket.on('post:delete', data => {
             document.getElementById(`post-${data.id}`)?.remove();

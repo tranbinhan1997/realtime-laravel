@@ -19,7 +19,7 @@ class PostController extends Controller
             return [
                 'id' => $p->id,
                 'user' => $p->user->name,
-                'is_owner' => $p->user_id === auth()->id(),
+                'author_id' => $p->user_id === auth()->id(),
                 'content' => $p->content,
                 'time' => $p->created_at->diffForHumans(),
                 'images' => $p->images->map(function ($img) {
@@ -66,7 +66,7 @@ class PostController extends Controller
         $payload = [
             'id' => $post->id,
             'user' => $post->user->name,
-            'is_owner' => true,
+            'author_id'=> $post->user_id,
             'content' => $post->content,
             'time' => $post->created_at->diffForHumans(),
             'images' => $post->images->map(function ($img) {
@@ -127,7 +127,7 @@ class PostController extends Controller
         $payload = [
             'id' => $post->id,
             'user' => $post->user->name,
-            'is_owner' => $post->user_id === auth()->id(),
+            'author_id'=> $post->user_id,
             'content' => $post->content,
             'time' => now()->diffForHumans(),
             'images' => $post->images->map(fn($img) =>
