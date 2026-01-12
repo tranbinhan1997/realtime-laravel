@@ -9,7 +9,8 @@
 @section('content')
 <div class="row vh-100">
     @include('partials.sidebar-left')
-    <div class="col-md-8 p-4 overflow-auto">
+    <div class="col-md-1 p-4"></div>
+    <div class="col-md-6 p-4 overflow-auto">
         <div class="card mb-3">
             <div class="card-body">
                 <input type="text" class="form-control input-post" placeholder="Bạn đang nghĩ gì thế?" readonly onclick="openPostModal()">
@@ -21,6 +22,7 @@
             <div class="skeleton-body"></div>
         </div>
     </div>
+    <div class="col-md-1 p-4"></div>
 
     @include('partials.sidebar-right')
 </div>
@@ -54,6 +56,14 @@
             </div>
         </div>
     </div>
+</div>
+
+<div id="imageViewer" class="image-viewer d-none">
+    <span class="close-btn" onclick="closeImageViewer()">×</span>
+
+    <span class="nav prev" onclick="prevImage()">❮</span>
+    <img id="viewerImage" src="">
+    <span class="nav next" onclick="nextImage()">❯</span>
 </div>
 
 @endsection

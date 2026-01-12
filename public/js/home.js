@@ -8,6 +8,8 @@ let emojiPickerVisible = false;
 let editingPostId = null;
 let nextPageUrl = '/api/posts';
 let isLoading = false;
+let viewerImages = [];
+let viewerIndex = 0;
 
 async function loadPosts() {
     if (!nextPageUrl || isLoading) return;
@@ -123,6 +125,12 @@ document.addEventListener('click', (e) => {
 
     picker.classList.add('d-none');
     emojiPickerVisible = false;
+});
+
+document.getElementById('imageViewer').addEventListener('click', e => {
+    if (e.target.id === 'imageViewer') {
+        closeImageViewer();
+    }
 });
 
 function setLoading(show) {
@@ -477,7 +485,10 @@ function renderImages(images = []) {
 
     return `
         <div class="post-images count-${images.length}">
-            ${images.map(src => `<img src="${src}">`).join('')}
+            ${images.map((src, index) => `
+                <img src="${src}"
+                     onclick='openImageViewer(${JSON.stringify(images)}, ${index})'>
+            `).join('')}
         </div>
     `;
 }
@@ -524,6 +535,38 @@ function toggleEmoji(e) {
     const picker = document.getElementById('emojiPicker');
     emojiPickerVisible = !emojiPickerVisible;
     picker.classList.toggle('d-none', !emojiPickerVisible);
+}
+
+function openImageViewer(images, index) {
+    viewerImages = images;
+    viewerIndex = index;
+
+    const viewer = document.getElementById('imageViewer');
+    const img = document.getElementById('viewerImage');
+
+    img.src = viewerImages[viewerIndex];
+    viewer.classList.remove('d-none');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeImageViewer() {
+    const viewer = document.getElementById('imageViewer');
+    const img = document.getElementById('viewerImage');
+
+    img.src = '';
+    viewer.classList.add('d-none');
+    document.body.style.overflow = '';
+}
+
+function nextImage() {
+    viewerIndex = (viewerIndex + 1) % viewerImages.length;
+    document.getElementById('viewerImage').src = viewerImages[viewerIndex];
+}
+
+function prevImage() {
+    viewerIndex =
+        (viewerIndex - 1 + viewerImages.length) % viewerImages.length;
+    document.getElementById('viewerImage').src = viewerImages[viewerIndex];
 }
 
 // Websocket

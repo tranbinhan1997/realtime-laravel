@@ -91,3 +91,58 @@
     border-radius: 12px;
     box-shadow: 0 8px 30px rgba(0,0,0,.15);
 }
+
+.image-viewer {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.95);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+}
+
+.image-viewer img {
+    max-width: 90vw;
+    max-height: 90vh;
+    object-fit: contain;
+    border-radius: 6px;
+}
+
+/* Close button */
+.image-viewer .close-btn {
+    position: absolute;
+    top: 20px;
+    right: 30px;
+    font-size: 40px;
+    color: #fff;
+    cursor: pointer;
+    user-select: none;
+}
+
+.image-viewer .close-btn:hover {
+    opacity: 0.7;
+}
+
+.image-viewer .nav {
+    position: absolute;
+    top: 50%;
+    font-size: 50px;
+    color: white;
+    cursor: pointer;
+    user-select: none;
+    transform: translateY(-50%);
+    padding: 10px;
+}
+
+.image-viewer .prev {
+    left: 20px;
+}
+
+.image-viewer .next {
+    right: 20px;
+}
+
+.image-viewer .nav:hover {
+    opacity: 0.7;
+}
