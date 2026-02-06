@@ -23,9 +23,9 @@ class PostController extends Controller
                 'author_id' => $p->user_id,
                 'content' => $p->content,
                 'time' => $p->created_at->diffForHumans(),
-                'images' => $p->images->map(fn ($img) =>
-                    asset('storage/' . $img->image_path)
-                ),
+                'images' => $p->images->map(function ($img) {
+                    return asset('storage/' . $img->image_path);
+                }),
                 'video' => $p->video_path
                     ? asset('storage/' . $p->video_path)
                     : null,
@@ -107,9 +107,9 @@ class PostController extends Controller
             'link_image' => $request->link['image'] ?? null,
         ]);
 
-        $newImages = collect($request->images ?? [])
-            ->map(fn ($path) => str_replace(url('/storage').'/', '', $path))
-            ->values();
+        $$newImages = collect($request->images ?? [])->map(function ($path) {
+            return str_replace(url('/storage') . '/', '', $path);
+        })->values();
 
         $oldImages = $post->images->pluck('image_path');
 
@@ -138,9 +138,9 @@ class PostController extends Controller
             'author_id'=> $post->user_id,
             'content' => $post->content,
             'time' => now()->diffForHumans(),
-            'images' => $post->images->map(fn($img) =>
-                asset('storage/' . $img->image_path)
-            ),
+            'images' => $p->images->map(function ($img) {
+                return asset('storage/' . $img->image_path);
+            }),
             'video' => $post->video_path
                 ? asset('storage/' . $post->video_path)
                 : null,
