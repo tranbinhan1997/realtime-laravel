@@ -1,16 +1,36 @@
 @extends('layouts.app')
 
-@section('title', 'Bảng tin')
+@section('title', 'Thông tin cá nhân')
 
 @push('styles')
     <link rel="stylesheet" href="{{ asset('css/app.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/home.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/profile.css') }}">
 @endpush
 
 @section('content')
-<div class="row vh-100">
-    @include('partials.sidebar-left')
-    <div class="col-md-1 p-4"></div>
+<div class="row">
+    <div class="col-md-2"></div>
+    <div class="col-md-8">
+        <div class="profile-cover">
+            <img src="https://hoanghamobile.com/tin-tuc/wp-content/uploads/2024/11/tai-hinh-nen-dep-mien-phi.jpg" class="cover-img">
+            <div class="profile-info">
+                <img src="https://cdn2.vectorstock.com/i/1000x1000/23/81/default-avatar-profile-icon-vector-18942381.jpg" class="avatar-img">
+                <div class="ms-3">
+                    <h4 class="mb-0">Trần Bình An</h4>
+                    <small class="text-muted">LARA JS</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2"></div>
+</div>
+
+<div class="row profile-offset vh-100">
+    <div class="col-md-2 p-4"></div>
+    <div class="col-md-2 border-start bg-white p-3">
+        <h6 class="fw-bold">Thông tin cá nhận</h6>
+        <ul class="list-unstyled"></ul>
+    </div>
     <div class="col-md-6 p-4 overflow-auto">
         <div class="card mb-3">
             <div class="card-body">
@@ -23,9 +43,7 @@
             <div class="skeleton-body"></div>
         </div>
     </div>
-    <div class="col-md-1 p-4"></div>
-
-    @include('partials.sidebar-right')
+    <div class="col-md-4 p-4"></div>
 </div>
 
 <div class="modal fade" id="postModal" tabindex="-1">
@@ -70,5 +88,4 @@
 @endsection
 @push('scripts')
     <script src="{{ asset('js/app.js') }}"></script>
-    <script src="{{ asset('js/home.js') }}"></script>
 @endpush

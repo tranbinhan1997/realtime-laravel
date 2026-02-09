@@ -49,6 +49,8 @@
 
         // Hàm render danh sách người dùng online/offline
         function renderUsers() {
+            const online = document.getElementById('online');
+            if (!online) return;
             online.innerHTML = "";
             Object.values(users).forEach(u => {
                 online.innerHTML += `
