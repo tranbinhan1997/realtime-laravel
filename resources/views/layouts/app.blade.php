@@ -43,6 +43,10 @@
         .then(u => {
             username.innerText = u.name;
             currentUserId = u.id;
+
+            const avatar = u.avatar && u.avatar !== '' ? u.avatar: '';
+
+            document.getElementById('nav-avatar').src = avatar;
         });
 
         const users = {};
@@ -53,9 +57,12 @@
             if (!online) return;
             online.innerHTML = "";
             Object.values(users).forEach(u => {
+                console.log(u);
+                const avatar = u.avatar && u.avatar !== '' ? u.avatar: '/images/default-avatar.jpg';
                 online.innerHTML += `
                     <li class="d-flex align-items-center gap-2 mb-2">
                         <span class="dot ${u.online ? 'online' : ''}"></span>
+                        <img src="${avatar}" class="user-avatar" alt="" onerror="this.onerror=null;this.src='/images/default-avatar.jpg';">
                         ${u.name}
                     </li>
                 `;

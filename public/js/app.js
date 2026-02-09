@@ -143,43 +143,53 @@ function addPost(post, { prepend = false } = {}) {
 
     const isOwner = post.author_id === currentUserId;
 
+    const avatar = post.avatar ? post.avatar: 'https://cdn2.vectorstock.com/i/1000x1000/23/81/default-avatar-profile-icon-vector-18942381.jpg';
+
     const html = `
-        <div class="card mb-3" id="post-${post.id}">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-start">
-                    <div>
-                        <strong>${post.user}</strong>
-                        <small class="text-muted"> · ${post.time}</small>
-                    </div>
-
-                    ${isOwner ? `
-                        <div class="dropdown">
-                            <button class="btn btn-sm btn-light"
-                                data-bs-toggle="dropdown">⋯</button>
-                            <ul class="dropdown-menu dropdown-menu-end">
-                                <li>
-                                    <button class="dropdown-item"
-                                        onclick="openEditPost(${post.id})">
-                                        Chỉnh sửa
-                                    </button>
-                                </li>
-                                <li>
-                                    <button class="dropdown-item text-danger"
-                                        onclick="deletePost(${post.id})">
-                                        Xóa bài viết
-                                    </button>
-                                </li>
-                            </ul>
+    <div class="card mb-3 post-item" id="post-${post.id}">
+        <div class="card-body">
+            <div class="d-flex align-items-start gap-3">
+                <img 
+                    src="${avatar}"
+                    class="post-avatar"
+                    alt="avatar"
+                    onerror="this.onerror=null;this.src='https://cdn2.vectorstock.com/i/1000x1000/23/81/default-avatar-profile-icon-vector-18942381.jpg';"
+                >
+                <div class="flex-grow-1">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <strong>${post.user}</strong>
+                            <small class="text-muted"> · ${post.time}</small>
                         </div>
-                    ` : ''}
+                        ${isOwner ? `
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-light"
+                                    data-bs-toggle="dropdown">⋯</button>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    <li>
+                                        <button class="dropdown-item"
+                                            onclick="openEditPost(${post.id})">
+                                            Chỉnh sửa
+                                        </button>
+                                    </li>
+                                    <li>
+                                        <button class="dropdown-item text-danger"
+                                            onclick="deletePost(${post.id})">
+                                            Xóa bài viết
+                                        </button>
+                                    </li>
+                                </ul>
+                            </div>
+                        ` : ''}
+                    </div>
+                    <div class="mt-2 post-content">${post.content}</div>
+                    ${renderImages(post.images)}
+                    ${renderLink(post.link)}
+                    ${renderVideo(post.video)}
                 </div>
-
-                <div class="mt-2 post-content">${post.content}</div>
-                ${renderImages(post.images)}
-                ${renderLink(post.link)}
-                ${renderVideo(post.video)}
             </div>
         </div>
+    </div>
     `;
 
     if (prepend) {

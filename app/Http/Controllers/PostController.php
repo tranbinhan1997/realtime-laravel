@@ -20,6 +20,7 @@ class PostController extends Controller
             return [
                 'id' => $p->id,
                 'user' => $p->user->name,
+                'avatar' => $p->user->avatar,
                 'author_id' => $p->user_id,
                 'content' => $p->content,
                 'time' => $p->created_at->diffForHumans(),
@@ -74,6 +75,7 @@ class PostController extends Controller
         $payload = [
             'id' => $post->id,
             'user' => $post->user->name,
+            'avatar' => $post->user->avatar,
             'author_id'=> $post->user_id,
             'content' => $post->content,
             'time' => $post->created_at->diffForHumans(),
@@ -135,6 +137,7 @@ class PostController extends Controller
         $payload = [
             'id' => $post->id,
             'user' => $post->user->name,
+            'avatar' => $post->user->avatar,
             'author_id'=> $post->user_id,
             'content' => $post->content,
             'time' => now()->diffForHumans(),
