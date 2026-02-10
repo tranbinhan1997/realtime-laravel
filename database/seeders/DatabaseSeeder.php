@@ -20,6 +20,7 @@ class DatabaseSeeder extends Seeder
             [
                 'name' => 'Trần Bình An',
                 'password' => Hash::make('123456'),
+                'avatar' => 'https://cdn3.ivivu.com/2015/11/20-hinh-anh-tuyet-dep-ve-Viet-Nam-ivivu-2.jpg'
             ]
         );
         User::updateOrCreate(
@@ -27,6 +28,15 @@ class DatabaseSeeder extends Seeder
             [
                 'name' => 'An An',
                 'password' => Hash::make('123456'),
+                'avatar' => 'https://hinhanhonline.com/Hinhanh/images15/AnhMB/co-gai-voi-chiec-vay-do-va-hoa-hong-choi-loa.jpg'
+            ]
+        );
+        User::updateOrCreate(
+            ['email' => 'tranan@gmail.com'],
+            [
+                'name' => 'Trần An',
+                'password' => Hash::make('123456'),
+                'avatar' => 'https://hinhanhonline.com/Hinhanh/images15/AnhMB/co-gai-voi-chiec-vay-do-va-hoa-hong-choi-loa.jpg'
             ]
         );
     }

@@ -8,6 +8,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/emoji-mart@latest/dist/emoji-mart.css">
     <link rel="stylesheet" href="css/app.css">
+    <link rel="stylesheet" href="css/chat.css">
     @stack('styles')
 </head>
 
@@ -16,6 +17,8 @@
 
     <div class="container-fluid">
         @yield('content')
+
+        @include('modal.chat')
     </div>
 
     @include('partials.footer')
@@ -47,6 +50,7 @@
             const avatar = u.avatar && u.avatar !== '' ? u.avatar: '';
 
             document.getElementById('nav-avatar').src = avatar;
+            renderUsers();
         });
 
         const users = {};
@@ -57,13 +61,16 @@
             if (!online) return;
             online.innerHTML = "";
             Object.values(users).forEach(u => {
-                console.log(u);
+                if (String(u.id) === String(currentUserId)) return;
                 const avatar = u.avatar && u.avatar !== '' ? u.avatar: '/images/default-avatar.jpg';
                 online.innerHTML += `
-                    <li class="d-flex align-items-center gap-2 mb-2">
+                    <li class="d-flex align-items-center gap-2 mb-2 user-item"
+                        data-user-id="${u.id}"
+                        data-user-name="${u.name}"
+                        data-avatar="${avatar}">
                         <span class="dot ${u.online ? 'online' : ''}"></span>
                         <img src="${avatar}" class="user-avatar" alt="" onerror="this.onerror=null;this.src='/images/default-avatar.jpg';">
-                        ${u.name}
+                        <span class="user-name">${u.name}</span>
                     </li>
                 `;
             });
@@ -105,6 +112,8 @@
         }
     </script>
 
+    <script src="{{ asset('js/app.js') }}"></script>
+    <script src="{{ asset('js/chat.js') }}"></script>
     @stack('scripts')
 </body>
 </html>

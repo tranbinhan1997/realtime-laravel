@@ -3,7 +3,6 @@
 @section('title', 'Bảng tin')
 
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('css/app.css') }}">
     <link rel="stylesheet" href="{{ asset('css/home.css') }}">
 @endpush
 
@@ -69,6 +68,5 @@
 
 @endsection
 @push('scripts')
-    <script src="{{ asset('js/app.js') }}"></script>
     <script src="{{ asset('js/home.js') }}"></script>
 @endpush

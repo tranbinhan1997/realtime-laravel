@@ -3,7 +3,6 @@
 @section('title', 'Thông tin cá nhân')
 
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('css/app.css') }}">
     <link rel="stylesheet" href="{{ asset('css/profile.css') }}">
 @endpush
 
@@ -87,5 +86,5 @@
 
 @endsection
 @push('scripts')
-    <script src="{{ asset('js/app.js') }}"></script>
+    <script src="{{ asset('js/profile.js') }}"></script>
 @endpush

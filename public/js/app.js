@@ -163,8 +163,7 @@ function addPost(post, { prepend = false } = {}) {
                         </div>
                         ${isOwner ? `
                             <div class="dropdown">
-                                <button class="btn btn-sm btn-light"
-                                    data-bs-toggle="dropdown">⋯</button>
+                                <button class="btn btn-sm btn-light" data-bs-toggle="dropdown">⋯</button>
                                 <ul class="dropdown-menu dropdown-menu-end">
                                     <li>
                                         <button class="dropdown-item"
@@ -182,7 +181,7 @@ function addPost(post, { prepend = false } = {}) {
                             </div>
                         ` : ''}
                     </div>
-                    <div class="mt-2 post-content">${post.content}</div>
+                    <div class="mt-2 post-content">${post.content ?? ''}</div>
                     ${renderImages(post.images)}
                     ${renderLink(post.link)}
                     ${renderVideo(post.video)}
@@ -192,11 +191,11 @@ function addPost(post, { prepend = false } = {}) {
     </div>
     `;
 
-    if (prepend) {
+    // if (isOwner) {
         feed.insertAdjacentHTML('afterbegin', html); // bài mới
-    } else {
-        feed.insertAdjacentHTML('beforeend', html); // bài cũ
-    }
+    // } else {
+    //     feed.insertAdjacentHTML('beforeend', html); // bài cũ
+    // }
 }
 
 
@@ -231,7 +230,7 @@ async function submitPost() {
     const post = await res.json();
 
     document.getElementById(`post-${post.id}`)?.remove();
-    addPost(post);
+    addPost(post, { prepend: true });
     resetPostModal();
     postModal.hide();
 }

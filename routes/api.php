@@ -4,6 +4,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\LinkPreviewController;
+use App\Http\Controllers\MessageController;
 use App\Http\Controllers\PostController;
 use App\Http\Controllers\UploadController;
 
@@ -26,5 +27,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/upload-image', [UploadController::class, 'upload']);
     Route::post('/preview-link', [LinkPreviewController::class, 'preview']);
     Route::post('/upload-video', [UploadController::class, 'uploadVideo']);
+
+    Route::get('/message/{id}', [MessageController::class, 'getMessage']);
+    Route::post('/message', [MessageController::class, 'sendMessage']);
 });
 

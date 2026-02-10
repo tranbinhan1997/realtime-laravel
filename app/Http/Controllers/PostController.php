@@ -12,9 +12,7 @@ class PostController extends Controller
 {
     public function index(Request $request)
     {
-        $posts = Post::with(['user', 'images'])
-            ->latest()
-            ->simplePaginate(10);
+        $posts = Post::with(['user', 'images'])->latest()->simplePaginate(10);
 
         $data = collect($posts->items())->map(function ($p) {
             return [
@@ -47,10 +45,6 @@ class PostController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate([
-            'content' => 'required|min:1'
-        ]);
-
         $link = $request->input('link');
 
         $post = Post::create([
