@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Post;
 use App\Models\PostImage;
+use App\Models\PostReaction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
@@ -33,7 +34,9 @@ class PostController extends Controller
                     'title' => $p->link_title,
                     'desc' => $p->link_desc,
                     'image' => $p->link_image,
-                ] : null
+                ] : null,
+                'reactions' => $p->reactions()->selectRaw('type, COUNT(*) as total')->groupBy('type')->pluck('total', 'type'),
+                'user_reaction' => optional($p->reactions()->where('user_id', auth()->id())->first())->type,
             ];
         });
 
@@ -179,5 +182,40 @@ class PostController extends Controller
         return response()->json([
             'success' => true
         ]);
+    }
+
+    public function react(Request $request, $postId)
+    {
+        $request->validate([
+            'type' => 'required|in:like,love,haha,wow,sad,angry'
+        ]);
+        $reaction = PostReaction::where('post_id', $postId)->where('user_id', auth()->id())->first();
+        if ($reaction) {
+            if ($reaction->type === $request->type) {
+                $reaction->delete();
+                $reacted = false;
+            } else {
+                $reaction->update([
+                    'type' => $request->type
+                ]);
+                $reacted = true;
+            }
+        } else {
+            PostReaction::create([
+                'post_id' => $postId,
+                'user_id' => auth()->id(),
+                'type'    => $request->type
+            ]);
+            $reacted = true;
+        }
+        $summary = PostReaction::where('post_id', $postId)->selectRaw('type, COUNT(*) as total')->groupBy('type')->pluck('total', 'type');
+        $payload = [
+            'post_id' => $postId,
+            'summary' => $summary,
+            'user_id' => auth()->id(),
+            'user_reaction' => $reacted ? $request->type : null
+        ];
+        Http::post('http://localhost:3000/post-react', $payload);
+        return $payload;
     }
 }

@@ -20,4 +20,9 @@ class Post extends Model
     {
         return $this->hasMany(PostImage::class);
     }
+
+    public function reactions()
+    {
+        return $this->hasMany(PostReaction::class);
+    }
 }

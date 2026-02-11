@@ -180,3 +180,25 @@
 #username {
     color: #fff;
 }
+
+.reaction-picker {
+    position: absolute;
+    bottom: 40px;
+    left: 0;
+    background: white;
+    padding: 6px 10px;
+    border-radius: 30px;
+    display: flex;
+    gap: 6px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.reaction-picker span {
+    font-size: 22px;
+    cursor: pointer;
+    transition: transform .15s;
+}
+
+.reaction-picker span:hover {
+    transform: scale(1.3);
+}

@@ -11,6 +11,15 @@ let isLoading = false;
 let viewerImages = [];
 let viewerIndex = 0;
 
+const reactionIcons = {
+    like: '👍',
+    love: '❤️',
+    haha: '😂',
+    wow:  '😮',
+    sad:  '😢',
+    angry:'😡'
+};
+
 async function loadPosts() {
     if (!nextPageUrl || isLoading) return;
 
@@ -133,6 +142,18 @@ document.getElementById('imageViewer').addEventListener('click', e => {
     }
 });
 
+document.addEventListener('mouseover', e => {
+    const wrapper = e.target.closest('.reaction-wrapper');
+    if (!wrapper) return;
+    wrapper.querySelector('.reaction-picker')?.classList.remove('d-none');
+});
+
+document.addEventListener('mouseout', e => {
+    const wrapper = e.target.closest('.reaction-wrapper');
+    if (!wrapper) return;
+    wrapper.querySelector('.reaction-picker')?.classList.add('d-none');
+});
+
 function setLoading(show) {
     document.getElementById('loading').classList.toggle('d-none', !show);
 }
@@ -144,6 +165,9 @@ function addPost(post, { prepend = false } = {}) {
     const isOwner = post.author_id === currentUserId;
 
     const avatar = post.avatar ? post.avatar: 'https://cdn2.vectorstock.com/i/1000x1000/23/81/default-avatar-profile-icon-vector-18942381.jpg';
+
+    const reactionSummary = renderReactionSummary(post);
+    const userReactionIcon = post.user_reaction ? reactionIcons[post.user_reaction] : '👍';
 
     const html = `
     <div class="card mb-3 post-item" id="post-${post.id}">
@@ -185,6 +209,27 @@ function addPost(post, { prepend = false } = {}) {
                     ${renderImages(post.images)}
                     ${renderLink(post.link)}
                     ${renderVideo(post.video)}
+
+                    <div id="reaction-summary-${post.id}"
+                        class="mt-2 d-flex gap-2">
+                        ${reactionSummary}
+                    </div>
+                    <div class="mt-2 position-relative reaction-wrapper">
+                        <button class="btn btn-light"
+                            onclick="react(${post.id}, 'like')"
+                            id="react-btn-${post.id}">
+                            ${userReactionIcon}
+                        </button>
+                        <div class="reaction-picker d-none"
+                            id="reaction-picker-${post.id}">
+                            ${Object.keys(reactionIcons).map(type => `
+                                <span onclick="react(${post.id}, '${type}')">
+                                    ${reactionIcons[type]}
+                                </span>
+                            `).join('')}
+                        </div>
+                    </div>
+
                 </div>
             </div>
         </div>
@@ -578,6 +623,38 @@ function prevImage() {
     document.getElementById('viewerImage').src = viewerImages[viewerIndex];
 }
 
+function renderReactionSummary(post) {
+    if (!post.reactions) return '';
+    return Object.entries(post.reactions)
+        .map(([type, total]) => `
+            <span class="reaction-item">
+                ${reactionIcons[type]} ${total}
+            </span>
+        `).join('');
+}
+
+async function react(postId, type) {
+    const res = await fetch(`/api/posts/${postId}/react`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            Authorization: 'Bearer ' + token
+        },
+        body: JSON.stringify({ type })
+    });
+    const data = await res.json();
+    updateReactionUI(data);
+}
+
+function updateReactionUI(data) {
+    const btn = document.getElementById(`react-btn-${data.post_id}`);
+    const summary = document.getElementById(`reaction-summary-${data.post_id}`);
+    btn.innerText = data.user_reaction? reactionIcons[data.user_reaction]: '👍';
+    summary.innerHTML = Object.entries(data.summary).map(([type, total]) =>
+        `<span>${reactionIcons[type]} ${total}</span>`
+    ).join('');
+}
+
 // Websocket
 socket.on('post:update', post => {
     const el = document.getElementById(`post-${post.id}`);
@@ -592,4 +669,8 @@ socket.on('post:new', post => {
 
 socket.on('post:delete', data => {
     document.getElementById(`post-${data.id}`)?.remove();
+});
+
+socket.on('post:react', data => {
+    updateReactionUI(data);
 });
