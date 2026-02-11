@@ -81,6 +81,20 @@
             });
 
             renderUsers();
+            loadUnreadCounts();
+        }
+
+        async function loadUnreadCounts() {
+            const res = await fetch('/api/messages-unread', {
+                headers: { Authorization: 'Bearer ' + token }
+            });
+            const data = await res.json();
+            Object.keys(data).forEach(userId => {
+                if (users[userId]) {
+                    users[userId].unread = data[userId];
+                }
+            });
+            renderUsers();
         }
 
         const users = {};
@@ -100,6 +114,11 @@
                         <span class="dot ${u.online ? 'online' : ''}"></span>
                         <img src="${avatar}" class="user-avatar" alt="" onerror="this.onerror=null;this.src='/images/default-avatar.jpg';">
                         <span class="user-name">${u.name}</span>
+                        ${u.unread ? `
+                            <span class="badge bg-danger ms-auto">
+                                ${u.unread}
+                            </span>
+                        ` : ''}
                     </li>
                 `;
             });

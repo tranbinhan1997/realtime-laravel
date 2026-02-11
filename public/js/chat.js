@@ -58,6 +58,16 @@ function openChat(userId, name, avatar) {
     document.getElementById('chatAvatar').src = avatar;
     document.getElementById('chatPopup').classList.remove('d-none');
     loadMessages(userId);
+
+    if (users[userId]) {
+        users[userId].unread = 0;
+        renderUsers();
+    }
+
+    fetch(`/api/messages-read/${userId}`, {
+        method: 'POST',
+        headers: { Authorization: 'Bearer ' + token }
+    });
 }
 
 async function loadMessages(userId) {
@@ -268,10 +278,18 @@ async function uploadVideoMes(e) {
 
 function closeChat() {
     document.getElementById('chatPopup').classList.add('d-none');
+    chattingUserId = null; 
 }
 
 socket.on("chat:new", (msg) => {
     if (Number(msg.from_user_id) === Number(chattingUserId)) {
         appendMessage(msg, 'other');
+    } else {
+        if (users[msg.from_user_id]) {
+            users[msg.from_user_id].unread =
+                (users[msg.from_user_id].unread || 0) + 1;
+
+            renderUsers();
+        }
     }
 });

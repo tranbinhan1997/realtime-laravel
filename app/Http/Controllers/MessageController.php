@@ -106,4 +106,25 @@ class MessageController extends Controller
 
         return $payload;
     }
+
+    public function getUnreadCounts()
+    {
+        return Message::where('to_user_id', auth()->id())
+            ->whereNull('read_at')
+            ->selectRaw('from_user_id, COUNT(*) as total')
+            ->groupBy('from_user_id')
+            ->pluck('total', 'from_user_id');
+    }
+
+    public function markAsRead($userId)
+    {
+        Message::where('from_user_id', $userId)
+            ->where('to_user_id', auth()->id())
+            ->whereNull('read_at')
+            ->update([
+                'read_at' => now()
+            ]);
+
+        return response()->json(['ok' => true]);
+    }
 }
