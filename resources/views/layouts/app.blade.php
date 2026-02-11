@@ -50,11 +50,40 @@
             const avatar = u.avatar && u.avatar !== '' ? u.avatar: '';
 
             document.getElementById('nav-avatar').src = avatar;
-            renderUsers();
+            loadAllUsers();
         });
 
-        const users = {};
+        // Load tất cả user
+        async function loadAllUsers() {
+            const res = await fetch("/api/users", {
+                headers: {
+                    Authorization: "Bearer " + token,
+                    Accept: "application/json"
+                }
+            });
+            const list = await res.json();
+            list.forEach(u => {
+                if (String(u.id) === String(currentUserId)) return;
+                if (users[u.id]) {
+                    users[u.id] = {
+                        ...users[u.id],
+                        name: u.name,
+                        avatar: u.avatar
+                    };
+                } else {
+                    users[u.id] = {
+                        id: u.id,
+                        name: u.name,
+                        avatar: u.avatar,
+                        online: false
+                    };
+                }
+            });
 
+            renderUsers();
+        }
+
+        const users = {};
         // Hàm render danh sách người dùng online/offline
         function renderUsers() {
             const online = document.getElementById('online');
