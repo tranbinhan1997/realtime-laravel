@@ -17,11 +17,11 @@
 
     <div class="container-fluid">
         @yield('content')
-
-        @include('modal.chat')
     </div>
 
     @include('partials.footer')
+
+    @include('modal.chat')
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.ckeditor.com/ckeditor5/41.3.0/classic/ckeditor.js"></script>

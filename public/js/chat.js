@@ -1,3 +1,5 @@
+let emojiPickerVisibleMes = false;
+
 document.addEventListener('click', function (e) {
     const userItem = e.target.closest('.user-item');
     if (!userItem) return;
@@ -5,6 +7,18 @@ document.addEventListener('click', function (e) {
     const userName = userItem.dataset.userName;
     const avatar   = userItem.dataset.avatar;
     openChat(userId, userName, avatar);
+});
+
+document.addEventListener('click', (e) => {
+    const picker = document.getElementById('emojiPickerMes');
+    const emojiBtn = e.target.closest('button');
+
+    if (!picker || picker.classList.contains('d-none')) return;
+
+    if (picker.contains(e.target) || emojiBtn?.innerText === '😊') return;
+
+    picker.classList.add('d-none');
+    emojiPickerVisibleMes = false;
 });
 
 let chattingUserId = null;
@@ -30,6 +44,17 @@ async function loadMessages(userId) {
         const type = m.from_user_id === currentUserId ? 'mine' : 'other';
         appendMessage(m, type);
     });
+
+    const picker = new EmojiMart.Picker({
+        onEmojiSelect: (emoji) => {
+            insertEmojiMes(emoji.native);
+        },
+        theme: 'light',
+        previewPosition: 'none',
+        skinTonePosition: 'none'
+    });
+
+    document.getElementById('emojiPickerMes').appendChild(picker);
 }
 
 async function sendMessage() {
@@ -79,6 +104,25 @@ function appendMessage(msg, type) {
     }
 
     box.scrollTop = box.scrollHeight;
+}
+
+// Hàm chèn emoji vào trình soạn thảo
+function openEmoji(e) {
+    e.stopPropagation();
+    const picker = document.getElementById('emojiPickerMes');
+    emojiPickerVisibleMes = !emojiPickerVisibleMes;
+    picker.classList.toggle('d-none', !emojiPickerVisibleMes);
+}
+
+function insertEmojiMes(emoji) {
+    const input = document.getElementById('chatInput');
+    if (!input) return;
+    const start = input.selectionStart ?? input.value.length;
+    const end   = input.selectionEnd   ?? input.value.length;
+    input.value =input.value.slice(0, start) +emoji +input.value.slice(end);
+    const pos = start + emoji.length;
+    input.setSelectionRange(pos, pos);
+    input.focus();
 }
 
 function closeChat() {

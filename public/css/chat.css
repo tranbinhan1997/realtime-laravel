@@ -26,13 +26,6 @@
     overflow-y: auto;
 }
 
-.chat-footer {
-    padding: 8px;
-    border-top: 1px solid #eee;
-    display: flex;
-    gap: 5px;
-}
-
 .chat-avatar {
     width: 32px;
     height: 32px;
@@ -89,4 +82,54 @@
 .chat-time {
     font-size: 11px;
     color: #999;
+}
+
+.chat-footer {
+    border-top: 1px solid #eee;
+    padding: 6px;
+    display: flex;
+    align-items: flex-end;
+    gap: 6px;
+}
+
+.chat-tools {
+    display: flex;
+    gap: 4px;
+}
+
+.chat-tools button {
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+}
+
+#chatInput {
+    flex: 1;
+    resize: none;
+    border-radius: 18px;
+    border: 1px solid #ddd;
+    padding: 6px 10px;
+    outline: none;
+    max-height: 80px;
+}
+
+.btn-send {
+    background: #0d6efd;
+    color: #fff;
+    border: none;
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    cursor: pointer;
+}
+
+.emoji-picker-mes {
+    position: absolute;
+    top: -65px;
+    left: -100px;
+    z-index: 1060;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, .15);
 }
