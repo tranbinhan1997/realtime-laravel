@@ -19,7 +19,7 @@
         <textarea id="chatInput" placeholder="Nhập tin nhắn..." rows="1"></textarea>
         <button class="btn-send" onclick="sendMessage()">➤</button>
         <input type="file" id="imageInputMes" onchange="uploadImageMes(event)" multiple accept="image/*" hidden>
-        <input type="file" id="videoInputMes" accept="video/*" hidden>
+        <input type="file" id="videoInputMes" onchange="uploadVideoMes(event)" accept="video/*" hidden>
     </div>
 
     <div id="emojiPickerMes" class="emoji-picker-mes d-none"></div>

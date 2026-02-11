@@ -97,6 +97,12 @@
     gap: 5px;
 }
 
+.chat-video-player {
+    max-width: 220px;
+    border-radius: 12px;
+    margin-top: 5px;
+}
+
 .chat-footer {
     border-top: 1px solid #eee;
     padding: 6px;

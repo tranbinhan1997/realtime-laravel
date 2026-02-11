@@ -29,6 +29,7 @@ class MessageController extends Controller
                     'from_user_id'  => $m->from_user_id,
                     'to_user_id'    => $m->to_user_id,
                     'content'       => $m->content,
+                    'video'         => $m->video_path ? asset('storage/' . $m->video_path) : null,
                     'images'        => $m->images->map(function ($img) {
                         return asset('storage/' . $img->image_path);
                     }),
@@ -47,10 +48,17 @@ class MessageController extends Controller
             'images.*'   => 'nullable|image|max:2048'
         ]);
 
+        $videoPath = null;
+        if ($request->hasFile('video')) {
+            $videoPath = $request->file('video')
+                ->store('messages/videos', 'public');
+        }
+
         $message = Message::create([
             'from_user_id' => auth()->id(),
             'to_user_id'   => $request->to_user_id,
             'content'      => $request->content,
+            'video_path'   => $videoPath
         ]);
 
         $images = [];
@@ -72,6 +80,7 @@ class MessageController extends Controller
             'to_user_id'   => $message->to_user_id,
             'content'      => $message->content,
             'images'       => $images,
+            'video'        => $videoPath ? asset('storage/' . $videoPath) : null,
             'time'         => $message->created_at->diffForHumans(),
             'user'         => auth()->user()->name,
             'avatar'       => auth()->user()->avatar,

@@ -87,6 +87,18 @@ function appendMessage(msg, type) {
             </div>
         `;
     }
+
+    let videoHtml = '';
+    if (msg.video) {
+        videoHtml = `
+            <div class="chat-video">
+                <video controls class="chat-video-player">
+                    <source src="${msg.video}">
+                </video>
+            </div>
+        `;
+    }
+
     const contentHtml = msg.content? `<div class="chat-text">${msg.content}</div>`: '';
     if (type === 'other') {
         box.insertAdjacentHTML('beforeend', `
@@ -103,6 +115,7 @@ function appendMessage(msg, type) {
                     <div class="bubble">
                         ${contentHtml}
                         ${imagesHtml}
+                        ${videoHtml}
                     </div>
                 </div>
             </div>
@@ -113,6 +126,7 @@ function appendMessage(msg, type) {
                 <div class="bubble">
                     ${contentHtml}
                     ${imagesHtml}
+                    ${videoHtml}
                 </div>
             </div>
         `);
@@ -164,6 +178,28 @@ async function uploadImageMes(e) {
     });
     const msg = await res.json();
     appendMessage(msg, 'mine');
+    e.target.value = '';
+}
+
+async function uploadVideoMes(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('to_user_id', chattingUserId);
+    formData.append('video', file);
+
+    const res = await fetch('/api/message', {
+        method: 'POST',
+        headers: {
+            Authorization: 'Bearer ' + token
+        },
+        body: formData
+    });
+
+    const msg = await res.json();
+    appendMessage(msg, 'mine');
+
     e.target.value = '';
 }
 
