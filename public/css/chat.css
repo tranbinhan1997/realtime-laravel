@@ -103,6 +103,41 @@
     margin-top: 5px;
 }
 
+.chat-link {
+    border: 1px solid #ddd;
+    border-radius: 12px;
+    overflow: hidden;
+    cursor: pointer;
+    margin-top: 6px;
+    max-width: 260px;
+}
+
+.chat-link-image {
+    width: 100%;
+    max-height: 160px;
+    object-fit: cover;
+}
+
+.chat-link-content {
+    padding: 8px;
+    background: #fff;
+}
+
+.chat-link-title {
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.chat-link-desc {
+    font-size: 12px;
+    color: #666;
+}
+
+.chat-link-domain {
+    font-size: 11px;
+    color: #999;
+}
+
 .chat-footer {
     border-top: 1px solid #eee;
     padding: 6px;

@@ -29,6 +29,12 @@ class MessageController extends Controller
                     'from_user_id'  => $m->from_user_id,
                     'to_user_id'    => $m->to_user_id,
                     'content'       => $m->content,
+                    'link'          => $m->link_url ? [
+                    'url'           => $m->link_url,
+                    'title'         => $m->link_title,
+                    'desc'          => $m->link_desc,
+                    'image'         => $m->link_image,
+                ] : null,
                     'video'         => $m->video_path ? asset('storage/' . $m->video_path) : null,
                     'images'        => $m->images->map(function ($img) {
                         return asset('storage/' . $img->image_path);
@@ -58,6 +64,10 @@ class MessageController extends Controller
             'from_user_id' => auth()->id(),
             'to_user_id'   => $request->to_user_id,
             'content'      => $request->content,
+            'link_url'     => $request->link['url'] ?? null,
+            'link_title'   => $request->link['title'] ?? null,
+            'link_desc'    => $request->link['desc'] ?? null,
+            'link_image'   => $request->link['image'] ?? null,
             'video_path'   => $videoPath
         ]);
 
@@ -80,6 +90,12 @@ class MessageController extends Controller
             'to_user_id'   => $message->to_user_id,
             'content'      => $message->content,
             'images'       => $images,
+            'link' => $message->link_url ? [
+                'url'   => $message->link_url,
+                'title' => $message->link_title,
+                'desc'  => $message->link_desc,
+                'image' => $message->link_image,
+            ] : null,
             'video'        => $videoPath ? asset('storage/' . $videoPath) : null,
             'time'         => $message->created_at->diffForHumans(),
             'user'         => auth()->user()->name,

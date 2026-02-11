@@ -1,4 +1,8 @@
 let emojiPickerVisibleMes = false;
+let chatLinkPreview;
+let lastChatPreviewUrl;
+let chattingUserId = null;
+
 document.addEventListener('click', function (e) {
     const userItem = e.target.closest('.user-item');
     if (!userItem) return;
@@ -20,7 +24,34 @@ document.addEventListener('click', (e) => {
     emojiPickerVisibleMes = false;
 });
 
-let chattingUserId = null;
+document.getElementById('chatInput').addEventListener('input', async function () {
+    const text = this.value;
+    const urlRegex = /(https?:\/\/[^\s]+)/;
+    const match = text.match(urlRegex);
+    if (!match) {
+        chatLinkPreview = null;
+        lastChatPreviewUrl = null;
+        return;
+    }
+    const url = match[1];
+    if (url === lastChatPreviewUrl) return;
+    lastChatPreviewUrl = url;
+    try {
+        const res = await fetch('/api/preview-link', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: 'Bearer ' + token
+            },
+            body: JSON.stringify({ url })
+        });
+        chatLinkPreview = await res.json();
+    } catch (e) {
+        chatLinkPreview = null;
+    }
+});
+
+
 function openChat(userId, name, avatar) {
     chattingUserId = userId;
     document.getElementById('chatUserName').innerText = name;
@@ -59,10 +90,17 @@ async function loadMessages(userId) {
 async function sendMessage() {
     const input = document.getElementById('chatInput');
     const text = input.value.trim();
-    if (!text) return;
+    if (!text && !chatLinkPreview) return;
     const formData = new FormData();
     formData.append('to_user_id', chattingUserId);
     formData.append('content', text);
+    if (chatLinkPreview) {
+        formData.append('link[url]', chatLinkPreview.url ?? '');
+        formData.append('link[title]', chatLinkPreview.title ?? '');
+        formData.append('link[desc]', chatLinkPreview.desc ?? '');
+        formData.append('link[image]', chatLinkPreview.image ?? '');
+    }
+
     const res = await fetch('/api/message', {
         method: 'POST',
         headers: {
@@ -73,6 +111,8 @@ async function sendMessage() {
     const msg = await res.json();
     appendMessage(msg, 'mine');
     input.value = '';
+    chatLinkPreview = null;
+    lastChatPreviewUrl = null;
 }
 
 function appendMessage(msg, type) {
@@ -99,6 +139,27 @@ function appendMessage(msg, type) {
         `;
     }
 
+    let linkHtml = '';
+    if (msg.link && msg.link.url) {
+        linkHtml = `
+            <div class="chat-link"
+                onclick="window.open('${msg.link.url}', '_blank')">
+                ${msg.link.image ? `<img src="${msg.link.image}" class="chat-link-image">` : ''}
+                <div class="chat-link-content">
+                    <div class="chat-link-title">
+                        ${msg.link.title ?? msg.link.url}
+                    </div>
+                    <div class="chat-link-desc">
+                        ${msg.link.desc ?? ''}
+                    </div>
+                    <div class="chat-link-domain">
+                        ${new URL(msg.link.url).hostname}
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
     const contentHtml = msg.content? `<div class="chat-text">${msg.content}</div>`: '';
     if (type === 'other') {
         box.insertAdjacentHTML('beforeend', `
@@ -116,6 +177,7 @@ function appendMessage(msg, type) {
                         ${contentHtml}
                         ${imagesHtml}
                         ${videoHtml}
+                        ${linkHtml}
                     </div>
                 </div>
             </div>
@@ -127,6 +189,7 @@ function appendMessage(msg, type) {
                     ${contentHtml}
                     ${imagesHtml}
                     ${videoHtml}
+                    ${linkHtml}
                 </div>
             </div>
         `);
