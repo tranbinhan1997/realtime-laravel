@@ -12,14 +12,14 @@
     <div class="chat-footer">
         <div class="chat-tools">
             <button type="button" onclick="openEmoji(event)">😀</button>
-            <button type="button" onclick="triggerImage()">📷</button>
-            <button type="button" onclick="triggerVideo()">🎥</button>
+            <button type="button" onclick="chooseImageMes()">📷</button>
+            <button type="button" onclick="chooseVideoMes()">🎥</button>
         </div>
 
         <textarea id="chatInput" placeholder="Nhập tin nhắn..." rows="1"></textarea>
         <button class="btn-send" onclick="sendMessage()">➤</button>
-        <input type="file" id="imageInput" accept="image/*" hidden>
-        <input type="file" id="videoInput" accept="video/*" hidden>
+        <input type="file" id="imageInputMes" onchange="uploadImageMes(event)" multiple accept="image/*" hidden>
+        <input type="file" id="videoInputMes" accept="video/*" hidden>
     </div>
 
     <div id="emojiPickerMes" class="emoji-picker-mes d-none"></div>

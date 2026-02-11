@@ -1,5 +1,4 @@
 let emojiPickerVisibleMes = false;
-
 document.addEventListener('click', function (e) {
     const userItem = e.target.closest('.user-item');
     if (!userItem) return;
@@ -61,16 +60,15 @@ async function sendMessage() {
     const input = document.getElementById('chatInput');
     const text = input.value.trim();
     if (!text) return;
+    const formData = new FormData();
+    formData.append('to_user_id', chattingUserId);
+    formData.append('content', text);
     const res = await fetch('/api/message', {
         method: 'POST',
         headers: {
-            'Content-Type': 'application/json',
             Authorization: 'Bearer ' + token
         },
-        body: JSON.stringify({
-            to_user_id: chattingUserId,
-            content: text
-        })
+        body: formData
     });
     const msg = await res.json();
     appendMessage(msg, 'mine');
@@ -79,6 +77,17 @@ async function sendMessage() {
 
 function appendMessage(msg, type) {
     const box = document.getElementById('chatMessages');
+    let imagesHtml = '';
+    if (msg.images && msg.images.length) {
+        imagesHtml = `
+            <div class="chat-images">
+                ${msg.images.map(src => `
+                    <img src="${src}" class="chat-image">
+                `).join('')}
+            </div>
+        `;
+    }
+    const contentHtml = msg.content? `<div class="chat-text">${msg.content}</div>`: '';
     if (type === 'other') {
         box.insertAdjacentHTML('beforeend', `
             <div class="chat-message other">
@@ -91,18 +100,23 @@ function appendMessage(msg, type) {
                         <strong class="chat-name">${msg.user}</strong>
                         <span class="chat-time">${msg.time}</span>
                     </div>
-                    <div class="bubble">${msg.content}</div>
+                    <div class="bubble">
+                        ${contentHtml}
+                        ${imagesHtml}
+                    </div>
                 </div>
             </div>
         `);
     } else {
         box.insertAdjacentHTML('beforeend', `
             <div class="chat-message mine">
-                <div class="bubble">${msg.content}</div>
+                <div class="bubble">
+                    ${contentHtml}
+                    ${imagesHtml}
+                </div>
             </div>
         `);
     }
-
     box.scrollTop = box.scrollHeight;
 }
 
@@ -123,6 +137,34 @@ function insertEmojiMes(emoji) {
     const pos = start + emoji.length;
     input.setSelectionRange(pos, pos);
     input.focus();
+}
+
+function chooseImageMes() {
+    document.getElementById('imageInputMes').click();
+}
+
+function chooseVideoMes() {
+    document.getElementById('videoInputMes').click();
+}
+
+async function uploadImageMes(e) {
+    const files = [...e.target.files];
+    if (!files.length) return;
+    const formData = new FormData();
+    formData.append('to_user_id', chattingUserId);
+    files.forEach(file => {
+        formData.append('images[]', file);
+    });
+    const res = await fetch('/api/message', {
+        method: 'POST',
+        headers: {
+            Authorization: 'Bearer ' + token
+        },
+        body: formData
+    });
+    const msg = await res.json();
+    appendMessage(msg, 'mine');
+    e.target.value = '';
 }
 
 function closeChat() {

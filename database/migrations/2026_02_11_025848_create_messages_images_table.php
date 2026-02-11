@@ -13,7 +13,7 @@ class CreateMessagesImagesTable extends Migration
      */
     public function up()
     {
-        Schema::create('messages_images', function (Blueprint $table) {
+        Schema::create('message_images', function (Blueprint $table) {
             $table->id();
             $table->foreignId('message_id')->nullable()->constrained()->nullOnDelete();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
@@ -29,6 +29,6 @@ class CreateMessagesImagesTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('messages_images');
+        Schema::dropIfExists('message_images');
     }
 }

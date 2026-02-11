@@ -36,7 +36,7 @@ class DatabaseSeeder extends Seeder
             [
                 'name' => 'Trần An',
                 'password' => Hash::make('123456'),
-                'avatar' => 'https://hinhanhonline.com/Hinhanh/images15/AnhMB/co-gai-voi-chiec-vay-do-va-hoa-hong-choi-loa.jpg'
+                'avatar' => 'https://cdn11.dienmaycholon.vn/filewebdmclnew/public/userupload/files/Image%20FP_2024/hinh-anh-avatar-ca-tinh-nu-2.jpg'
             ]
         );
     }
