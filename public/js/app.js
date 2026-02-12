@@ -10,6 +10,8 @@ let nextPageUrl = '/api/posts';
 let isLoading = false;
 let viewerImages = [];
 let viewerIndex = 0;
+let commentEmojiPickers = {};
+let replyEmojiPickers = {};
 
 const reactionIcons = {
     like: '👍',
@@ -246,10 +248,15 @@ function addPost(post, { prepend = false } = {}) {
                             ${renderComments(post.comments, post.id)}
                         </div>
                         <div class="d-flex gap-2 mt-2">
+                            <button class="btn btn-light btn-sm"
+                                onclick="toggleCommentEmoji(${post.id})">
+                                😊
+                            </button>
                             <input type="text" id="comment-input-${post.id}" class="form-control form-control-sm" placeholder="Viết bình luận...">
                             <button class="btn btn-primary btn-sm" onclick="sendComment(${post.id})"> ➤ </button>
                         </div>
                     </div>
+                    <div id="comment-emoji-${post.id}" class="d-none position-relative"></div>
 
                 </div>
             </div>
@@ -810,18 +817,72 @@ function renderSingleComment(c, postId) {
 
             <div id="reply-box-${c.id}" class="d-none ms-4 mt-2">
                 <div class="d-flex gap-2">
-                    <input type="text"
-                        class="form-control form-control-sm"
-                        placeholder="Viết trả lời..."
-                        id="reply-input-${c.id}">
+                    <button class="btn btn-light btn-sm"
+                        onclick="toggleReplyEmoji(${c.id})">
+                        😊
+                    </button>
+                    <input type="text" class="form-control form-control-sm" placeholder="Viết trả lời..." id="reply-input-${c.id}">
                     <button class="btn btn-sm btn-primary"
-                        onclick="sendReply(${c.id}, ${postId}, document.getElementById('reply-input-${c.id}'))">
-                        ➤
+                        onclick="sendReply(${c.id}, ${postId}, document.getElementById('reply-input-${c.id}'))">➤
                     </button>
                 </div>
             </div>
+            <div id="reply-emoji-${c.id}" class="d-none"></div>
         </div>
     `;
+}
+
+function toggleCommentEmoji(postId) {
+    const container = document.getElementById(`comment-emoji-${postId}`);
+    if (!commentEmojiPickers[postId]) {
+        const picker = new EmojiMart.Picker({
+            onEmojiSelect: (emoji) => {
+                insertEmojiToInput(`comment-input-${postId}`, emoji.native);
+            },
+            theme: 'light',
+            previewPosition: 'none',
+            skinTonePosition: 'none'
+        });
+        container.appendChild(picker);
+        commentEmojiPickers[postId] = picker;
+    }
+    container.classList.toggle('d-none');
+}
+
+function toggleReplyEmoji(commentId) {
+    const container = document.getElementById(`reply-emoji-${commentId}`);
+    if (!container) return;
+    if (!replyEmojiPickers[commentId]) {
+        const picker = new EmojiMart.Picker({
+            onEmojiSelect: (emoji) => {
+                insertEmojiToInput(`reply-input-${commentId}`, emoji.native);
+            },
+            theme: 'light',
+            previewPosition: 'none',
+            skinTonePosition: 'none'
+        });
+        container.appendChild(picker);
+        replyEmojiPickers[commentId] = picker;
+    }
+    container.classList.toggle('d-none');
+}
+
+
+function insertEmojiToInput(inputId, emoji) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+
+    const start = input.selectionStart;
+    const end = input.selectionEnd;
+    const text = input.value;
+
+    input.value =
+        text.substring(0, start) +
+        emoji +
+        text.substring(end);
+
+    input.focus();
+    input.selectionStart = input.selectionEnd = start + emoji.length;
 }
 
 function formatContent(text) {

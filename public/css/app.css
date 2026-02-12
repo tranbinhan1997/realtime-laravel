@@ -207,3 +207,14 @@
     color: #1877f2;
     font-weight: 600;
 }
+
+.comment-emoji-container {
+    position: absolute;
+    bottom: 45px;
+    left: 0;
+    z-index: 999;
+}
+
+.reply-wrapper {
+    position: relative;
+}
