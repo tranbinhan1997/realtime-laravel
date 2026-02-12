@@ -145,13 +145,18 @@ document.getElementById('imageViewer').addEventListener('click', e => {
 document.addEventListener('mouseover', e => {
     const wrapper = e.target.closest('.reaction-wrapper');
     if (!wrapper) return;
-    wrapper.querySelector('.reaction-picker')?.classList.remove('d-none');
+
+    const picker = wrapper.querySelector('.reaction-picker');
+    if (picker) picker.classList.remove('d-none');
 });
 
 document.addEventListener('mouseout', e => {
     const wrapper = e.target.closest('.reaction-wrapper');
     if (!wrapper) return;
-    wrapper.querySelector('.reaction-picker')?.classList.add('d-none');
+    if (!wrapper.contains(e.relatedTarget)) {
+        const picker = wrapper.querySelector('.reaction-picker');
+        if (picker) picker.classList.add('d-none');
+    }
 });
 
 function setLoading(show) {
@@ -214,7 +219,7 @@ function addPost(post, { prepend = false } = {}) {
                         class="mt-2 d-flex gap-2">
                         ${reactionSummary}
                     </div>
-                    <div class="mt-2 position-relative reaction-wrapper">
+                    <div class="mt-2 position-relative reaction-wrapper d-inline-block">
                         <button class="btn btn-light"
                             onclick="react(${post.id}, 'like')"
                             id="react-btn-${post.id}">
