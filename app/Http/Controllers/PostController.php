@@ -249,7 +249,6 @@ class PostController extends Controller
             'content' => 'required|string',
             'parent_id' => 'nullable|exists:post_comments,id'
         ]);
-
         $parentId = $request->parent_id;
         if ($parentId) {
             $parent = PostComment::find($parentId);
@@ -257,16 +256,13 @@ class PostController extends Controller
                 $parentId = $parent->parent_id;
             }
         }
-
         $comment = PostComment::create([
             'parent_id' => $request->parent_id,
             'post_id' => $postId,
             'user_id' => auth()->id(),
             'content' => $request->content
         ]);
-
         $commentCount = PostComment::where('post_id', $postId)->count();
-
         $payload = [
             'parent_id' => $comment->parent_id,
             'post_id' => $postId,
@@ -277,9 +273,7 @@ class PostController extends Controller
             'time' => $comment->created_at->diffForHumans(),
             'comment_count' => $commentCount
         ];
-
         Http::post("http://localhost:3000/post-comment", $payload);
-
         return $payload;
     }
 }

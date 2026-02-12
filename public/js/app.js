@@ -247,7 +247,7 @@ function addPost(post, { prepend = false } = {}) {
                         </div>
                         <div class="d-flex gap-2 mt-2">
                             <input type="text" id="comment-input-${post.id}" class="form-control form-control-sm" placeholder="Viết bình luận...">
-                            <button class="btn btn-primary btn-sm" onclick="sendComment(${post.id})"> Gửi </button>
+                            <button class="btn btn-primary btn-sm" onclick="sendComment(${post.id})"> ➤ </button>
                         </div>
                     </div>
 
@@ -257,11 +257,7 @@ function addPost(post, { prepend = false } = {}) {
     </div>
     `;
 
-    // if (isOwner) {
-        feed.insertAdjacentHTML('afterbegin', html); // bài mới
-    // } else {
-    //     feed.insertAdjacentHTML('beforeend', html); // bài cũ
-    // }
+    feed.insertAdjacentHTML('afterbegin', html); // bài mới
 }
 
 
@@ -820,7 +816,7 @@ function renderSingleComment(c, postId) {
                         id="reply-input-${c.id}">
                     <button class="btn btn-sm btn-primary"
                         onclick="sendReply(${c.id}, ${postId}, document.getElementById('reply-input-${c.id}'))">
-                        Gửi
+                        ➤
                     </button>
                 </div>
             </div>
