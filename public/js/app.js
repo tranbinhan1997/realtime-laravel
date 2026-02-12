@@ -717,6 +717,11 @@ async function sendComment(postId) {
         body: JSON.stringify({ content })
     });
     input.value = '';
+
+    const emojiContainer = document.getElementById(`comment-emoji-${postId}`);
+    if (emojiContainer) {
+        emojiContainer.classList.add('d-none');
+    }
 }
 
 async function sendReply(parentId, postId, input) {
@@ -739,6 +744,10 @@ async function sendReply(parentId, postId, input) {
 
     const replyBox = document.getElementById(`reply-box-${parentId}`);
     if (replyBox) replyBox.classList.add('d-none');
+    const emojiContainer = document.getElementById(`reply-emoji-${parentId}`);
+    if (emojiContainer) {
+        emojiContainer.classList.add('d-none');
+    }
 }
 
 
