@@ -235,16 +235,15 @@ function addPost(post, { prepend = false } = {}) {
                         </div>
                     </div>
 
-                    <div class="mt-2">
-                        <button class="btn btn-sm btn-light"
-                            onclick="toggleCommentBox(${post.id})">
-                            💬 ${post.comment_count ?? 0}
-                        </button>
-                    </div>
+                    <button class="btn btn-sm btn-light"
+                        id="comment-btn-${post.id}"
+                        onclick="toggleCommentBox(${post.id})">
+                        💬 ${post.comment_count ?? 0}
+                    </button>
 
                     <div id="comment-section-${post.id}" class="mt-2 d-none">
                         <div id="comment-list-${post.id}">
-                            ${renderComments(post.comments)}
+                            ${renderComments(post.comments, post.id)}
                         </div>
                         <div class="d-flex gap-2 mt-2">
                             <input type="text" id="comment-input-${post.id}" class="form-control form-control-sm" placeholder="Viết bình luận...">
@@ -681,6 +680,10 @@ function toggleCommentBox(postId) {
     document.getElementById(`comment-section-${postId}`).classList.toggle('d-none');
 }
 
+function showReplyBox(commentId) {
+    document.getElementById(`reply-box-${commentId}`).classList.toggle('d-none');
+}
+
 async function sendComment(postId) {
     const input = document.getElementById(`comment-input-${postId}`);
     const content = input.value.trim();
@@ -693,45 +696,114 @@ async function sendComment(postId) {
         },
         body: JSON.stringify({ content })
     });
-    // const data = await res.json();
-    // addCommentToUI(data);
     input.value = '';
 }
 
-function addCommentToUI(data) {
-    const box = document.getElementById(`comment-list-${data.post_id}`);
-    box.insertAdjacentHTML('beforeend', `
-        <div class="d-flex gap-2 mb-2">
-            <img src="${data.avatar}" width="28" height="28" class="rounded-circle">
-            <div>
-                <div class="fw-bold small">${data.user}</div>
-                <div class="small">${data.content}</div>
-            </div>
-        </div>
-    `);
-    const btn = document.querySelector(
-        `button[onclick="toggleCommentBox(${data.post_id})"]`
-    );
+async function sendReply(parentId, postId, input) {
+    const content = input.value.trim();
+    if (!content) return;
+    const res = await fetch(`/api/posts/${postId}/comment`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            Authorization: 'Bearer ' + token
+        },
+        body: JSON.stringify({
+            content,
+            parent_id: parentId
+        })
+    });
+    input.value = '';
+
+    const replyBox = document.getElementById(`reply-box-${parentId}`);
+    if (replyBox) replyBox.classList.add('d-none');
+    input.blur();
+}
+
+function updateCommentCount(postId) {
+    const btn = document.getElementById(`comment-btn-${postId}`);
+    if (!btn) return;
+
     const current = parseInt(btn.innerText.replace(/\D/g,'')) || 0;
     btn.innerText = `💬 ${current + 1}`;
 }
 
-function renderComments(comments = []) {
-    if (!comments.length) return '';
+function addCommentToUI(data) {
+    if (data.parent_id) {
+        const parent = document.getElementById(`comment-${data.parent_id}`);
+        if (!parent) return;
+        const repliesContainer = parent.querySelector('.replies-container');
+        repliesContainer.insertAdjacentHTML(
+            'beforeend',
+            renderReply(data)
+        );
+        return;
+    }
+    const box = document.getElementById(`comment-list-${data.post_id}`);
+    if (!box) return;
+    box.insertAdjacentHTML(
+        'beforeend',
+        renderSingleComment(data, data.post_id)
+    );
+    updateCommentCount(data.post_id);
+}
+
+function renderComments(comments = [], postId) {
+    return comments.map(c => renderSingleComment(c, postId)).join('');
+}
+
+function renderReply(r) {
     return `
-        <div class="mt-2">
-            ${comments.map(c => `
-                <div class="d-flex gap-2 mb-2">
-                    <img src="${c.avatar}" width="28" height="28" class="rounded-circle">
-                    <div>
-                        <div class="fw-bold small">${c.user}</div>
-                        <div class="small">${c.content}</div>
-                    </div>
-                </div>
-            `).join('')}
+        <div class="d-flex gap-2 mb-2" id="comment-${r.id}">
+            <img src="${r.avatar}" width="24" height="24" class="rounded-circle">
+            <div>
+                <div class="fw-bold small">${r.user}</div>
+                <div class="small">${r.content}</div>
+            </div>
         </div>
     `;
 }
+
+function renderSingleComment(c, postId) {
+    return `
+        <div class="comment-item mb-2" id="comment-${c.id}">
+            <div class="d-flex gap-2">
+                <img src="${c.avatar}" width="28" height="28" class="rounded-circle">
+                <div>
+                    <div class="fw-bold small">${c.user}</div>
+                    <div class="small">${c.content}</div>
+                    <div class="small text-muted"
+                         onclick="showReplyBox(${c.id})"
+                         style="cursor:pointer">
+                        Trả lời
+                    </div>
+                </div>
+            </div>
+
+            <div class="ms-4 mt-2 replies-container">
+                ${
+                    c.replies
+                        ? c.replies.map(r => renderReply(r)).join('')
+                        : ''
+                }
+            </div>
+
+            <div id="reply-box-${c.id}" class="d-none ms-4 mt-2">
+                <div class="d-flex gap-2">
+                    <input type="text"
+                        class="form-control form-control-sm"
+                        placeholder="Viết trả lời..."
+                        id="reply-input-${c.id}">
+                    <button class="btn btn-sm btn-primary"
+                        onclick="sendReply(${c.id}, ${postId}, document.getElementById('reply-input-${c.id}'))">
+                        Gửi
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
 
 // Websocket
 socket.on('post:update', post => {

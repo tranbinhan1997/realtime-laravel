@@ -37,17 +37,29 @@ class PostController extends Controller
                     'image' => $p->link_image,
                 ] : null,
                 'reactions' => $p->reactions()->selectRaw('type, COUNT(*) as total')->groupBy('type')->pluck('total', 'type'),
-                'comments' => $p->comments->map(function ($c) {
-                    return [
-                        'id' => $c->id,
-                        'post_id' => $c->post_id,
-                        'content' => $c->content,
-                        'user' => $c->user->name,
-                        'avatar' => $c->user->avatar,
-                        'time' => $c->created_at->diffForHumans()
-                    ];
-                }),
-                'comment_count' => $p->comments->count(),
+                'comments' => $p->comments()
+                    ->whereNull('parent_id')
+                    ->with(['user', 'replies.user'])
+                    ->get()
+                    ->map(function ($c) {
+                        return [
+                            'id' => $c->id,
+                            'content' => $c->content,
+                            'user' => $c->user->name,
+                            'avatar' => $c->user->avatar,
+                            'parent_id' => null,
+                            'replies' => $c->replies->map(function ($r) {
+                                return [
+                                    'id' => $r->id,
+                                    'content' => $r->content,
+                                    'user' => $r->user->name,
+                                    'avatar' => $r->user->avatar,
+                                    'parent_id' => $r->parent_id,
+                                ];
+                            })
+                        ];
+                    }),
+                'comment_count' => $p->comments()->whereNull('parent_id')->count(),
                 'user_reaction' => optional($p->reactions()->where('user_id', auth()->id())->first())->type,
             ];
         });
@@ -234,22 +246,28 @@ class PostController extends Controller
     public function comment(Request $request, $postId)
     {
         $request->validate([
-            'content' => 'required|string'
+            'content' => 'required|string',
+            'parent_id' => 'nullable|exists:post_comments,id'
         ]);
 
         $comment = PostComment::create([
+            'parent_id' => $request->parent_id,
             'post_id' => $postId,
             'user_id' => auth()->id(),
             'content' => $request->content
         ]);
 
+        $commentCount = PostComment::where('post_id', $postId)->count();
+
         $payload = [
+            'parent_id' => $comment->parent_id,
             'post_id' => $postId,
             'id' => $comment->id,
             'content' => $comment->content,
             'user' => auth()->user()->name,
             'avatar' => auth()->user()->avatar,
-            'time' => $comment->created_at->diffForHumans()
+            'time' => $comment->created_at->diffForHumans(),
+            'comment_count' => $commentCount
         ];
 
         Http::post("http://localhost:3000/post-comment", $payload);
