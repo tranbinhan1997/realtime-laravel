@@ -202,3 +202,8 @@
 .reaction-picker span:hover {
     transform: scale(1.3);
 }
+
+.mention {
+    color: #1877f2;
+    font-weight: 600;
+}

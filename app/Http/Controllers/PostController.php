@@ -250,6 +250,14 @@ class PostController extends Controller
             'parent_id' => 'nullable|exists:post_comments,id'
         ]);
 
+        $parentId = $request->parent_id;
+        if ($parentId) {
+            $parent = PostComment::find($parentId);
+            if ($parent && $parent->parent_id) {
+                $parentId = $parent->parent_id;
+            }
+        }
+
         $comment = PostComment::create([
             'parent_id' => $request->parent_id,
             'post_id' => $postId,

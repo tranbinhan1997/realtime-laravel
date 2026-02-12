@@ -680,8 +680,25 @@ function toggleCommentBox(postId) {
     document.getElementById(`comment-section-${postId}`).classList.toggle('d-none');
 }
 
-function showReplyBox(commentId) {
-    document.getElementById(`reply-box-${commentId}`).classList.toggle('d-none');
+function showReplyBox(commentId, username = '') {
+    let box = document.getElementById(`reply-box-${commentId}`);
+    if (!box) {
+        const replyEl = document.getElementById(`comment-${commentId}`);
+        if (!replyEl) return;
+
+        const parentComment = replyEl.closest('.comment-item');
+        if (!parentComment) return;
+
+        const parentId = parentComment.id.replace('comment-', '');
+        box = document.getElementById(`reply-box-${parentId}`);
+    }
+    if (!box) return;
+    box.classList.remove('d-none');
+    if (username) {
+        const input = box.querySelector('input');
+        input.value = `@${username} `;
+        input.focus();
+    }
 }
 
 async function sendComment(postId) {
@@ -702,7 +719,8 @@ async function sendComment(postId) {
 async function sendReply(parentId, postId, input) {
     const content = input.value.trim();
     if (!content) return;
-    const res = await fetch(`/api/posts/${postId}/comment`, {
+
+    await fetch(`/api/posts/${postId}/comment`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -713,12 +731,13 @@ async function sendReply(parentId, postId, input) {
             parent_id: parentId
         })
     });
+
     input.value = '';
 
     const replyBox = document.getElementById(`reply-box-${parentId}`);
     if (replyBox) replyBox.classList.add('d-none');
-    input.blur();
 }
+
 
 function updateCommentCount(postId) {
     const btn = document.getElementById(`comment-btn-${postId}`);
@@ -752,13 +771,18 @@ function renderComments(comments = [], postId) {
     return comments.map(c => renderSingleComment(c, postId)).join('');
 }
 
-function renderReply(r) {
+function renderReply(r, postId) {
     return `
         <div class="d-flex gap-2 mb-2" id="comment-${r.id}">
             <img src="${r.avatar}" width="24" height="24" class="rounded-circle">
             <div>
                 <div class="fw-bold small">${r.user}</div>
                 <div class="small">${r.content}</div>
+                <div class="small text-muted"
+                    onclick="showReplyBox(${r.id}, '${r.user}')"
+                    style="cursor:pointer">
+                    Trả lời
+                </div>
             </div>
         </div>
     `;
@@ -771,10 +795,10 @@ function renderSingleComment(c, postId) {
                 <img src="${c.avatar}" width="28" height="28" class="rounded-circle">
                 <div>
                     <div class="fw-bold small">${c.user}</div>
-                    <div class="small">${c.content}</div>
+                    <div class="small">${formatContent(c.content)}</div>
                     <div class="small text-muted"
-                         onclick="showReplyBox(${c.id})"
-                         style="cursor:pointer">
+                        onclick="showReplyBox(${c.id}, '${c.user}')"
+                        style="cursor:pointer">
                         Trả lời
                     </div>
                 </div>
@@ -802,6 +826,13 @@ function renderSingleComment(c, postId) {
             </div>
         </div>
     `;
+}
+
+function formatContent(text) {
+    return text.replace(
+        /@(\w+)/g,
+        '<span class="mention">@$1</span>'
+    );
 }
 
 
