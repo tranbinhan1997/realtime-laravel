@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Post;
+use App\Models\PostComment;
 use App\Models\PostImage;
 use App\Models\PostReaction;
 use Illuminate\Http\Request;
@@ -13,7 +14,7 @@ class PostController extends Controller
 {
     public function index(Request $request)
     {
-        $posts = Post::with(['user', 'images'])->latest()->simplePaginate(10);
+        $posts = Post::with(['user', 'images', 'comments.user'])->latest()->simplePaginate(10);
 
         $data = collect($posts->items())->map(function ($p) {
             return [
@@ -36,6 +37,17 @@ class PostController extends Controller
                     'image' => $p->link_image,
                 ] : null,
                 'reactions' => $p->reactions()->selectRaw('type, COUNT(*) as total')->groupBy('type')->pluck('total', 'type'),
+                'comments' => $p->comments->map(function ($c) {
+                    return [
+                        'id' => $c->id,
+                        'post_id' => $c->post_id,
+                        'content' => $c->content,
+                        'user' => $c->user->name,
+                        'avatar' => $c->user->avatar,
+                        'time' => $c->created_at->diffForHumans()
+                    ];
+                }),
+                'comment_count' => $p->comments->count(),
                 'user_reaction' => optional($p->reactions()->where('user_id', auth()->id())->first())->type,
             ];
         });
@@ -216,6 +228,32 @@ class PostController extends Controller
             'user_reaction' => $reacted ? $request->type : null
         ];
         Http::post('http://localhost:3000/post-react', $payload);
+        return $payload;
+    }
+
+    public function comment(Request $request, $postId)
+    {
+        $request->validate([
+            'content' => 'required|string'
+        ]);
+
+        $comment = PostComment::create([
+            'post_id' => $postId,
+            'user_id' => auth()->id(),
+            'content' => $request->content
+        ]);
+
+        $payload = [
+            'post_id' => $postId,
+            'id' => $comment->id,
+            'content' => $comment->content,
+            'user' => auth()->user()->name,
+            'avatar' => auth()->user()->avatar,
+            'time' => $comment->created_at->diffForHumans()
+        ];
+
+        Http::post("http://localhost:3000/post-comment", $payload);
+
         return $payload;
     }
 }

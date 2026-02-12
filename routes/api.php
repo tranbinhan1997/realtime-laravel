@@ -26,6 +26,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/preview-link', [LinkPreviewController::class, 'preview']);
     Route::post('/upload-video', [UploadController::class, 'uploadVideo']);
     Route::post('/posts/{id}/react', [PostController::class, 'react']);
+    Route::post('/posts/{id}/comment', [PostController::class, 'comment']);
 
     Route::get('/message/{id}', [MessageController::class, 'getMessage']);
     Route::post('/message', [MessageController::class, 'sendMessage']);

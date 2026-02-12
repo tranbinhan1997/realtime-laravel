@@ -235,6 +235,23 @@ function addPost(post, { prepend = false } = {}) {
                         </div>
                     </div>
 
+                    <div class="mt-2">
+                        <button class="btn btn-sm btn-light"
+                            onclick="toggleCommentBox(${post.id})">
+                            💬 ${post.comment_count ?? 0}
+                        </button>
+                    </div>
+
+                    <div id="comment-section-${post.id}" class="mt-2 d-none">
+                        <div id="comment-list-${post.id}">
+                            ${renderComments(post.comments)}
+                        </div>
+                        <div class="d-flex gap-2 mt-2">
+                            <input type="text" id="comment-input-${post.id}" class="form-control form-control-sm" placeholder="Viết bình luận...">
+                            <button class="btn btn-primary btn-sm" onclick="sendComment(${post.id})"> Gửi </button>
+                        </div>
+                    </div>
+
                 </div>
             </div>
         </div>
@@ -660,6 +677,62 @@ function updateReactionUI(data) {
     ).join('');
 }
 
+function toggleCommentBox(postId) {
+    document.getElementById(`comment-section-${postId}`).classList.toggle('d-none');
+}
+
+async function sendComment(postId) {
+    const input = document.getElementById(`comment-input-${postId}`);
+    const content = input.value.trim();
+    if (!content) return;
+    const res = await fetch(`/api/posts/${postId}/comment`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            Authorization: 'Bearer ' + token
+        },
+        body: JSON.stringify({ content })
+    });
+    // const data = await res.json();
+    // addCommentToUI(data);
+    input.value = '';
+}
+
+function addCommentToUI(data) {
+    const box = document.getElementById(`comment-list-${data.post_id}`);
+    box.insertAdjacentHTML('beforeend', `
+        <div class="d-flex gap-2 mb-2">
+            <img src="${data.avatar}" width="28" height="28" class="rounded-circle">
+            <div>
+                <div class="fw-bold small">${data.user}</div>
+                <div class="small">${data.content}</div>
+            </div>
+        </div>
+    `);
+    const btn = document.querySelector(
+        `button[onclick="toggleCommentBox(${data.post_id})"]`
+    );
+    const current = parseInt(btn.innerText.replace(/\D/g,'')) || 0;
+    btn.innerText = `💬 ${current + 1}`;
+}
+
+function renderComments(comments = []) {
+    if (!comments.length) return '';
+    return `
+        <div class="mt-2">
+            ${comments.map(c => `
+                <div class="d-flex gap-2 mb-2">
+                    <img src="${c.avatar}" width="28" height="28" class="rounded-circle">
+                    <div>
+                        <div class="fw-bold small">${c.user}</div>
+                        <div class="small">${c.content}</div>
+                    </div>
+                </div>
+            `).join('')}
+        </div>
+    `;
+}
+
 // Websocket
 socket.on('post:update', post => {
     const el = document.getElementById(`post-${post.id}`);
@@ -678,4 +751,8 @@ socket.on('post:delete', data => {
 
 socket.on('post:react', data => {
     updateReactionUI(data);
+});
+
+socket.on('post:comment', data => {
+    addCommentToUI(data);
 });
