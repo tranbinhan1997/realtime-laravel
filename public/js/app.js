@@ -14,6 +14,8 @@ let commentEmojiPickers = {};
 let replyEmojiPickers = {};
 let commentUploads = {};
 let replyUploads = {};
+let commentLinkPreview;
+let lastCommentPreviewUrl;
 
 const reactionIcons = {
     like: '👍',
@@ -163,6 +165,29 @@ document.addEventListener('mouseout', e => {
     }
 });
 
+document.addEventListener('input', async function (e) {
+    if (!e.target.id.startsWith('comment-input-') &&
+        !e.target.id.startsWith('reply-input-')) return;
+    const text = e.target.value;
+    const urlRegex = /(https?:\/\/[^\s]+)/;
+    const match = text.match(urlRegex);
+    if (!match) return;
+    const url = match[1];
+    try {
+        const res = await fetch('/api/preview-link', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: 'Bearer ' + token
+            },
+            body: JSON.stringify({ url })
+        });
+        const preview = await res.json();
+        commentLinkPreview = preview;
+    } catch (err) {
+        console.log(err);
+    }
+});
 function setLoading(show) {
     document.getElementById('loading').classList.toggle('d-none', !show);
 }
@@ -712,6 +737,14 @@ async function sendComment(postId) {
     const content = input.value.trim();
     const formData = new FormData();
     formData.append('content', content);
+
+    if (commentLinkPreview) {
+        formData.append('link[url]', commentLinkPreview.url ?? '');
+        formData.append('link[title]', commentLinkPreview.title ?? '');
+        formData.append('link[desc]', commentLinkPreview.desc ?? '');
+        formData.append('link[image]', commentLinkPreview.image ?? '');
+    }
+
     if (commentUploads[postId]) {
         commentUploads[postId].forEach(file => {
             formData.append('images[]', file);
@@ -728,6 +761,10 @@ async function sendComment(postId) {
     commentUploads[postId] = [];
     const emojiContainer = document.getElementById(`comment-emoji-${postId}`);
     if (emojiContainer) emojiContainer.classList.add('d-none');
+    const previewBox = document.getElementById(`preview-comment-input-${postId}`);
+    if (previewBox) previewBox.remove();
+    commentLinkPreview = null;
+    lastCommentPreviewUrl = null;
 }
 
 async function sendReply(parentId, postId, input) {
@@ -735,6 +772,12 @@ async function sendReply(parentId, postId, input) {
     const formData = new FormData();
     formData.append('content', content);
     formData.append('parent_id', parentId);
+    if (commentLinkPreview) {
+        formData.append('link[url]', commentLinkPreview.url ?? '');
+        formData.append('link[title]', commentLinkPreview.title ?? '');
+        formData.append('link[desc]', commentLinkPreview.desc ?? '');
+        formData.append('link[image]', commentLinkPreview.image ?? '');
+    }
 
     if (replyUploads[parentId]) {
         replyUploads[parentId].forEach(file => {
@@ -754,6 +797,10 @@ async function sendReply(parentId, postId, input) {
     if (replyBox) replyBox.classList.add('d-none');
     const emojiContainer = document.getElementById(`reply-emoji-${parentId}`);
     if (emojiContainer) emojiContainer.classList.add('d-none');
+    const previewBox = document.getElementById(`preview-reply-input-${parentId}`);
+    if (previewBox) previewBox.remove();
+    commentLinkPreview = null;
+    lastCommentPreviewUrl = null;
 }
 
 function updateCommentCount(postId) {
@@ -811,6 +858,27 @@ function renderReply(r, postId) {
         `;
     }
 
+    let linkHtml = '';
+    if (r.link && r.link.url) {
+        linkHtml = `
+            <div class="chat-link"
+                onclick="window.open('${r.link.url}', '_blank')">
+                ${r.link.image ? `<img src="${r.link.image}" class="chat-link-image">` : ''}
+                <div class="chat-link-content">
+                    <div class="chat-link-title">
+                        ${r.link.title ?? r.link.url}
+                    </div>
+                    <div class="chat-link-desc">
+                        ${r.link.desc ?? ''}
+                    </div>
+                    <div class="chat-link-domain">
+                        ${new URL(r.link.url).hostname}
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
     return `
         <div class="d-flex gap-2 mb-2" id="comment-${r.id}">
             <img src="${r.avatar}" width="24" height="24" class="rounded-circle">
@@ -819,6 +887,7 @@ function renderReply(r, postId) {
                 <div class="small">${formatContent(r.content)}</div>
                 ${imagesHtml}
                 ${videoHtml}
+                ${linkHtml}
                 <div class="small text-muted"
                     onclick="showReplyBox(${r.id}, '${r.user}')"
                     style="cursor:pointer">
@@ -852,6 +921,27 @@ function renderSingleComment(c, postId) {
         `;
     }
 
+    let linkHtml = '';
+    if (c.link && c.link.url) {
+        linkHtml = `
+            <div class="chat-link"
+                onclick="window.open('${c.link.url}', '_blank')">
+                ${c.link.image ? `<img src="${c.link.image}" class="chat-link-image">` : ''}
+                <div class="chat-link-content">
+                    <div class="chat-link-title">
+                        ${c.link.title ?? c.link.url}
+                    </div>
+                    <div class="chat-link-desc">
+                        ${c.link.desc ?? ''}
+                    </div>
+                    <div class="chat-link-domain">
+                        ${new URL(c.link.url).hostname}
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
     return `
         <div class="comment-item mb-2" id="comment-${c.id}">
             <div class="d-flex gap-2">
@@ -861,6 +951,7 @@ function renderSingleComment(c, postId) {
                     <div class="small">${formatContent(c.content)}</div>
                     ${imagesHtml}
                     ${videoHtml}
+                    ${linkHtml}
                     <div class="small text-muted"
                         onclick="showReplyBox(${c.id}, '${c.user}')"
                         style="cursor:pointer">
@@ -1030,7 +1121,7 @@ async function uploadReplyVideo(e, commentId, postId) {
     const formData = new FormData();
     formData.append('video', file);
 
-    const res = await fetch('`/api/posts/${postId}/comment`', {
+    const res = await fetch(`/api/posts/${postId}/comment`, {
         method: 'POST',
         headers: {
             Authorization: 'Bearer ' + token
@@ -1040,8 +1131,6 @@ async function uploadReplyVideo(e, commentId, postId) {
 
     e.target.value = '';
 }
-
-
 
 
 

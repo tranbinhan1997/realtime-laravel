@@ -52,9 +52,13 @@ class PostController extends Controller
                             'images' => $c->images->map(function ($img) {
                                 return asset('storage/' . $img->image_path);
                             }),
-                            'video' => $c->video_path
-                                ? asset('storage/' . $c->video_path)
-                                : null,
+                            'video' => $c->video_path ? asset('storage/' . $c->video_path) : null,
+                            'link'          => $c->link_url ? [
+                                'url'       => $c->link_url,
+                                'title'     => $c->link_title,
+                                'desc'      => $c->link_desc,
+                                'image'     => $c->link_image,
+                            ] : null,
                             'replies' => $c->replies->map(function ($r) {
                                 return [
                                     'id' => $r->id,
@@ -66,6 +70,12 @@ class PostController extends Controller
                                         return asset('storage/' . $img->image_path);
                                     }),
                                     'video' => $r->video_path ? asset('storage/' . $r->video_path) : null,
+                                    'link'          => $r->link_url ? [
+                                        'url'       => $r->link_url,
+                                        'title'     => $r->link_title,
+                                        'desc'      => $r->link_desc,
+                                        'image'     => $r->link_image,
+                                    ] : null,
                                 ];
                             })
                         ];
@@ -283,11 +293,15 @@ class PostController extends Controller
         }
 
         $comment = PostComment::create([
-            'parent_id' => $request->parent_id,
+            'parent_id' => $parentId,
             'post_id' => $postId,
             'user_id' => auth()->id(),
             'content' => $request->content,
-            'video_path' => $videoPath
+            'video_path' => $videoPath,
+            'link_url'     => $request->link['url'] ?? null,
+            'link_title'   => $request->link['title'] ?? null,
+            'link_desc'    => $request->link['desc'] ?? null,
+            'link_image'   => $request->link['image'] ?? null,
         ]);
 
         $images = [];
@@ -315,6 +329,12 @@ class PostController extends Controller
             'comment_count' => $commentCount,
             'images'       => $images,
             'video' => $videoPath ? asset('storage/' . $videoPath): null,
+            'link' => $comment->link_url ? [
+                'url'   => $comment->link_url,
+                'title' => $comment->link_title,
+                'desc'  => $comment->link_desc,
+                'image' => $comment->link_image,
+            ] : null,
         ];
         Http::post("http://localhost:3000/post-comment", $payload);
         return $payload;

@@ -30,11 +30,11 @@ class MessageController extends Controller
                     'to_user_id'    => $m->to_user_id,
                     'content'       => $m->content,
                     'link'          => $m->link_url ? [
-                    'url'           => $m->link_url,
-                    'title'         => $m->link_title,
-                    'desc'          => $m->link_desc,
-                    'image'         => $m->link_image,
-                ] : null,
+                        'url'           => $m->link_url,
+                        'title'         => $m->link_title,
+                        'desc'          => $m->link_desc,
+                        'image'         => $m->link_image,
+                    ] : null,
                     'video'         => $m->video_path ? asset('storage/' . $m->video_path) : null,
                     'images'        => $m->images->map(function ($img) {
                         return asset('storage/' . $img->image_path);
