@@ -978,7 +978,7 @@ function renderSingleComment(c, postId) {
                         onclick="sendReply(${c.id}, ${postId}, document.getElementById('reply-input-${c.id}'))">➤
                     </button>
                     <input type="file" id="imageInputReply-${c.id}" onchange="handleReplyImage(event, ${c.id}, ${postId})" multiple accept="image/*" hidden>
-                    <input type="file" id="videoInputReply-${c.id}" onchange="uploadReplyVideo(event, ${c.id}, ${postId}))" accept="video/*" hidden>
+                    <input type="file" id="videoInputReply-${c.id}" onchange="uploadReplyVideo(event, ${c.id}, ${postId})" accept="video/*" hidden>
                 </div>
             </div>
             <div id="reply-emoji-${c.id}" class="d-none"></div>
@@ -1119,6 +1119,7 @@ async function uploadReplyVideo(e, commentId, postId) {
     if (!file) return;
 
     const formData = new FormData();
+    formData.append('parent_id', commentId);
     formData.append('video', file);
 
     const res = await fetch(`/api/posts/${postId}/comment`, {
