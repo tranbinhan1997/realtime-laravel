@@ -256,7 +256,7 @@ function addPost(post, { prepend = false } = {}) {
                             <input type="text" id="comment-input-${post.id}" class="form-control form-control-sm" placeholder="Viết bình luận...">
                             <button class="btn btn-primary btn-sm" onclick="sendComment(${post.id})"> ➤ </button>
                             <input type="file" id="imageInputComment-${post.id}" onchange="handleCommentImage(event, ${post.id})" multiple accept="image/*" hidden>
-                            <input type="file" id="videoInputReplyComment" onchange="uploadVideoComment(event, ${post.id})" accept="video/*" hidden>
+                            <input type="file" id="videoInputComment-${post.id}" onchange="uploadCommentVideo(event, ${post.id})" accept="video/*" hidden>
                         </div>
                     </div>
                     <div id="comment-emoji-${post.id}" class="d-none position-relative"></div>
@@ -800,6 +800,17 @@ function renderReply(r, postId) {
         `;
     }
 
+    let videoHtml = '';
+    if (r.video) {
+        videoHtml = `
+            <div class="chat-video">
+                <video controls class="chat-video-player">
+                    <source src="${r.video}">
+                </video>
+            </div>
+        `;
+    }
+
     return `
         <div class="d-flex gap-2 mb-2" id="comment-${r.id}">
             <img src="${r.avatar}" width="24" height="24" class="rounded-circle">
@@ -807,6 +818,7 @@ function renderReply(r, postId) {
                 <div class="fw-bold small">${r.user}</div>
                 <div class="small">${formatContent(r.content)}</div>
                 ${imagesHtml}
+                ${videoHtml}
                 <div class="small text-muted"
                     onclick="showReplyBox(${r.id}, '${r.user}')"
                     style="cursor:pointer">
@@ -829,6 +841,17 @@ function renderSingleComment(c, postId) {
         `;
     }
 
+    let videoHtml = '';
+    if (c.video) {
+        videoHtml = `
+            <div class="chat-video">
+                <video controls class="chat-video-player">
+                    <source src="${c.video}">
+                </video>
+            </div>
+        `;
+    }
+
     return `
         <div class="comment-item mb-2" id="comment-${c.id}">
             <div class="d-flex gap-2">
@@ -837,6 +860,7 @@ function renderSingleComment(c, postId) {
                     <div class="fw-bold small">${c.user}</div>
                     <div class="small">${formatContent(c.content)}</div>
                     ${imagesHtml}
+                    ${videoHtml}
                     <div class="small text-muted"
                         onclick="showReplyBox(${c.id}, '${c.user}')"
                         style="cursor:pointer">
@@ -863,7 +887,7 @@ function renderSingleComment(c, postId) {
                         onclick="sendReply(${c.id}, ${postId}, document.getElementById('reply-input-${c.id}'))">➤
                     </button>
                     <input type="file" id="imageInputReply-${c.id}" onchange="handleReplyImage(event, ${c.id}, ${postId})" multiple accept="image/*" hidden>
-                    <input type="file" id="videoInputReply" onchange="uploadVideoReply(event, ${c.id}, ${postId}))" accept="video/*" hidden>
+                    <input type="file" id="videoInputReply-${c.id}" onchange="uploadReplyVideo(event, ${c.id}, ${postId}))" accept="video/*" hidden>
                 </div>
             </div>
             <div id="reply-emoji-${c.id}" class="d-none"></div>
@@ -928,16 +952,16 @@ function chooseImageComment(postId) {
     document.getElementById(`imageInputComment-${postId}`).click();
 }
 
-function chooseVideoComment() {
-    document.getElementById('videoInputComment').click();
+function chooseVideoComment(postId) {
+    document.getElementById(`videoInputComment-${postId}`).click();
 }
 
 function chooseImageReply(commentId) {
     document.getElementById(`imageInputReply-${commentId}`).click();
 }
 
-function chooseVideoReply() {
-    document.getElementById('videoInputReply').click();
+function chooseVideoReply(commentId) {
+    document.getElementById(`videoInputReply-${commentId}`).click();
 }
 
 async function handleCommentImage(e, postId) {
@@ -960,26 +984,23 @@ async function handleCommentImage(e, postId) {
     e.target.value = '';
 }
 
-// async function uploadVideoComment(e, postId) {
-//     const file = e.target.files[0];
-//     if (!file) return;
+async function uploadCommentVideo(e, postId) {
+    const file = e.target.files[0];
+    if (!file) return;
 
-//     const formData = new FormData();
-//     formData.append('video', file);
+    const formData = new FormData();
+    formData.append('video', file);
 
-//     const res = await fetch(`/api/posts/${postId}/comment`, {
-//         method: 'POST',
-//         headers: {
-//             Authorization: 'Bearer ' + token
-//         },
-//         body: formData
-//     });
+    const res = await fetch(`/api/posts/${postId}/comment`, {
+        method: 'POST',
+        headers: {
+            Authorization: 'Bearer ' + token
+        },
+        body: formData
+    });
 
-//     const msg = await res.json();
-//     appendMessage(msg, 'mine');
-
-//     e.target.value = '';
-// }
+    e.target.value = '';
+}
 
 async function handleReplyImage(e, commentId, postId) {
     const files = [...e.target.files];
@@ -1002,26 +1023,23 @@ async function handleReplyImage(e, commentId, postId) {
     e.target.value = '';
 }
 
-// async function uploadVideoReply(e) {
-//     const file = e.target.files[0];
-//     if (!file) return;
+async function uploadReplyVideo(e, commentId, postId) {
+    const file = e.target.files[0];
+    if (!file) return;
 
-//     const formData = new FormData();
-//     formData.append('video', file);
+    const formData = new FormData();
+    formData.append('video', file);
 
-//     const res = await fetch('`/api/posts/${postId}/comment`', {
-//         method: 'POST',
-//         headers: {
-//             Authorization: 'Bearer ' + token
-//         },
-//         body: formData
-//     });
+    const res = await fetch('`/api/posts/${postId}/comment`', {
+        method: 'POST',
+        headers: {
+            Authorization: 'Bearer ' + token
+        },
+        body: formData
+    });
 
-//     const msg = await res.json();
-//     appendMessage(msg, 'mine');
-
-//     e.target.value = '';
-// }
+    e.target.value = '';
+}
 
 
 

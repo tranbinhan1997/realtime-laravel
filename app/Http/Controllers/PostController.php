@@ -52,6 +52,9 @@ class PostController extends Controller
                             'images' => $c->images->map(function ($img) {
                                 return asset('storage/' . $img->image_path);
                             }),
+                            'video' => $c->video_path
+                                ? asset('storage/' . $c->video_path)
+                                : null,
                             'replies' => $c->replies->map(function ($r) {
                                 return [
                                     'id' => $r->id,
@@ -62,6 +65,7 @@ class PostController extends Controller
                                     'images' => $r->images->map(function ($img) {
                                         return asset('storage/' . $img->image_path);
                                     }),
+                                    'video' => $r->video_path ? asset('storage/' . $r->video_path) : null,
                                 ];
                             })
                         ];
@@ -258,7 +262,7 @@ class PostController extends Controller
             'images'    => 'nullable|array'
         ]);
 
-        if (!$request->content && !$request->hasFile('images')) {
+        if (!$request->content && !$request->hasFile('images') && !$request->hasFile('video')) {
             return response()->json([
                 'message' => 'Comment cannot be empty'
             ], 422);
@@ -271,11 +275,19 @@ class PostController extends Controller
                 $parentId = $parent->parent_id;
             }
         }
+
+        $videoPath = null;
+        if ($request->hasFile('video')) {
+            $videoPath = $request->file('video')
+                ->store('comments/videos', 'public');
+        }
+
         $comment = PostComment::create([
             'parent_id' => $request->parent_id,
             'post_id' => $postId,
             'user_id' => auth()->id(),
-            'content' => $request->content
+            'content' => $request->content,
+            'video_path' => $videoPath
         ]);
 
         $images = [];
@@ -302,6 +314,7 @@ class PostController extends Controller
             'time' => $comment->created_at->diffForHumans(),
             'comment_count' => $commentCount,
             'images'       => $images,
+            'video' => $videoPath ? asset('storage/' . $videoPath): null,
         ];
         Http::post("http://localhost:3000/post-comment", $payload);
         return $payload;
