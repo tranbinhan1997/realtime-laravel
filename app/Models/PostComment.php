@@ -25,4 +25,9 @@ class PostComment extends Model
     {
         return $this->hasMany(PostComment::class, 'parent_id');
     }
+
+    public function images()
+    {
+        return $this->hasMany(CommentImage::class, 'comment_id');
+    }
 }

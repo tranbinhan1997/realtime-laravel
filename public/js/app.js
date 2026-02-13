@@ -12,6 +12,8 @@ let viewerImages = [];
 let viewerIndex = 0;
 let commentEmojiPickers = {};
 let replyEmojiPickers = {};
+let commentUploads = {};
+let replyUploads = {};
 
 const reactionIcons = {
     like: '👍',
@@ -248,12 +250,13 @@ function addPost(post, { prepend = false } = {}) {
                             ${renderComments(post.comments, post.id)}
                         </div>
                         <div class="d-flex gap-2 mt-2">
-                            <button class="btn btn-light btn-sm"
-                                onclick="toggleCommentEmoji(${post.id})">
-                                😊
-                            </button>
+                            <button class="btn btn-light btn-sm" onclick="toggleCommentEmoji(${post.id})">😊</button>
+                            <button class="btn btn-light btn-sm" type="button" onclick="chooseImageComment(${post.id})">📷</button>
+                            <button class="btn btn-light btn-sm" type="button" onclick="chooseVideoComment(${post.id})">🎥</button>
                             <input type="text" id="comment-input-${post.id}" class="form-control form-control-sm" placeholder="Viết bình luận...">
                             <button class="btn btn-primary btn-sm" onclick="sendComment(${post.id})"> ➤ </button>
+                            <input type="file" id="imageInputComment-${post.id}" onchange="handleCommentImage(event, ${post.id})" multiple accept="image/*" hidden>
+                            <input type="file" id="videoInputReplyComment" onchange="uploadVideoComment(event, ${post.id})" accept="video/*" hidden>
                         </div>
                     </div>
                     <div id="comment-emoji-${post.id}" class="d-none position-relative"></div>
@@ -707,49 +710,51 @@ function showReplyBox(commentId, username = '') {
 async function sendComment(postId) {
     const input = document.getElementById(`comment-input-${postId}`);
     const content = input.value.trim();
-    if (!content) return;
+    const formData = new FormData();
+    formData.append('content', content);
+    if (commentUploads[postId]) {
+        commentUploads[postId].forEach(file => {
+            formData.append('images[]', file);
+        });
+    }
     const res = await fetch(`/api/posts/${postId}/comment`, {
         method: 'POST',
         headers: {
-            'Content-Type': 'application/json',
             Authorization: 'Bearer ' + token
         },
-        body: JSON.stringify({ content })
+        body: formData
     });
     input.value = '';
-
+    commentUploads[postId] = [];
     const emojiContainer = document.getElementById(`comment-emoji-${postId}`);
-    if (emojiContainer) {
-        emojiContainer.classList.add('d-none');
-    }
+    if (emojiContainer) emojiContainer.classList.add('d-none');
 }
 
 async function sendReply(parentId, postId, input) {
     const content = input.value.trim();
-    if (!content) return;
+    const formData = new FormData();
+    formData.append('content', content);
+    formData.append('parent_id', parentId);
 
+    if (replyUploads[parentId]) {
+        replyUploads[parentId].forEach(file => {
+            formData.append('images[]', file);
+        });
+    }
     await fetch(`/api/posts/${postId}/comment`, {
         method: 'POST',
         headers: {
-            'Content-Type': 'application/json',
             Authorization: 'Bearer ' + token
         },
-        body: JSON.stringify({
-            content,
-            parent_id: parentId
-        })
+        body: formData
     });
-
     input.value = '';
-
+    replyUploads[parentId] = [];
     const replyBox = document.getElementById(`reply-box-${parentId}`);
     if (replyBox) replyBox.classList.add('d-none');
     const emojiContainer = document.getElementById(`reply-emoji-${parentId}`);
-    if (emojiContainer) {
-        emojiContainer.classList.add('d-none');
-    }
+    if (emojiContainer) emojiContainer.classList.add('d-none');
 }
-
 
 function updateCommentCount(postId) {
     const btn = document.getElementById(`comment-btn-${postId}`);
@@ -784,12 +789,24 @@ function renderComments(comments = [], postId) {
 }
 
 function renderReply(r, postId) {
+    let imagesHtml = '';
+    if (r.images && r.images.length) {
+        imagesHtml = `
+            <div class="chat-images">
+                ${r.images.map(src => `
+                    <img src="${src}" class="chat-image">
+                `).join('')}
+            </div>
+        `;
+    }
+
     return `
         <div class="d-flex gap-2 mb-2" id="comment-${r.id}">
             <img src="${r.avatar}" width="24" height="24" class="rounded-circle">
             <div>
                 <div class="fw-bold small">${r.user}</div>
-                <div class="small">${r.content}</div>
+                <div class="small">${formatContent(r.content)}</div>
+                ${imagesHtml}
                 <div class="small text-muted"
                     onclick="showReplyBox(${r.id}, '${r.user}')"
                     style="cursor:pointer">
@@ -801,6 +818,17 @@ function renderReply(r, postId) {
 }
 
 function renderSingleComment(c, postId) {
+    let imagesHtml = '';
+    if (c.images && c.images.length) {
+        imagesHtml = `
+            <div class="chat-images">
+                ${c.images.map(src => `
+                    <img src="${src}" class="chat-image">
+                `).join('')}
+            </div>
+        `;
+    }
+
     return `
         <div class="comment-item mb-2" id="comment-${c.id}">
             <div class="d-flex gap-2">
@@ -808,6 +836,7 @@ function renderSingleComment(c, postId) {
                 <div>
                     <div class="fw-bold small">${c.user}</div>
                     <div class="small">${formatContent(c.content)}</div>
+                    ${imagesHtml}
                     <div class="small text-muted"
                         onclick="showReplyBox(${c.id}, '${c.user}')"
                         style="cursor:pointer">
@@ -826,14 +855,15 @@ function renderSingleComment(c, postId) {
 
             <div id="reply-box-${c.id}" class="d-none ms-4 mt-2">
                 <div class="d-flex gap-2">
-                    <button class="btn btn-light btn-sm"
-                        onclick="toggleReplyEmoji(${c.id})">
-                        😊
-                    </button>
+                    <button class="btn btn-light btn-sm" onclick="toggleReplyEmoji(${c.id})">😊</button>
+                    <button class="btn btn-light btn-sm" type="button" onclick="chooseImageReply(${c.id})">📷</button>
+                    <button class="btn btn-light btn-sm" type="button" onclick="chooseVideoReply(${c.id})">🎥</button>
                     <input type="text" class="form-control form-control-sm" placeholder="Viết trả lời..." id="reply-input-${c.id}">
                     <button class="btn btn-sm btn-primary"
                         onclick="sendReply(${c.id}, ${postId}, document.getElementById('reply-input-${c.id}'))">➤
                     </button>
+                    <input type="file" id="imageInputReply-${c.id}" onchange="handleReplyImage(event, ${c.id}, ${postId})" multiple accept="image/*" hidden>
+                    <input type="file" id="videoInputReply" onchange="uploadVideoReply(event, ${c.id}, ${postId}))" accept="video/*" hidden>
                 </div>
             </div>
             <div id="reply-emoji-${c.id}" class="d-none"></div>
@@ -894,13 +924,115 @@ function insertEmojiToInput(inputId, emoji) {
     input.selectionStart = input.selectionEnd = start + emoji.length;
 }
 
+function chooseImageComment(postId) {
+    document.getElementById(`imageInputComment-${postId}`).click();
+}
+
+function chooseVideoComment() {
+    document.getElementById('videoInputComment').click();
+}
+
+function chooseImageReply(commentId) {
+    document.getElementById(`imageInputReply-${commentId}`).click();
+}
+
+function chooseVideoReply() {
+    document.getElementById('videoInputReply').click();
+}
+
+async function handleCommentImage(e, postId) {
+    const files = [...e.target.files];
+    if (!files.length) return;
+
+    const formData = new FormData();
+    files.forEach(file => {
+        formData.append('images[]', file);
+    });
+
+    await fetch(`/api/posts/${postId}/comment`, {
+        method: 'POST',
+        headers: {
+            Authorization: 'Bearer ' + token
+        },
+        body: formData
+    });
+
+    e.target.value = '';
+}
+
+// async function uploadVideoComment(e, postId) {
+//     const file = e.target.files[0];
+//     if (!file) return;
+
+//     const formData = new FormData();
+//     formData.append('video', file);
+
+//     const res = await fetch(`/api/posts/${postId}/comment`, {
+//         method: 'POST',
+//         headers: {
+//             Authorization: 'Bearer ' + token
+//         },
+//         body: formData
+//     });
+
+//     const msg = await res.json();
+//     appendMessage(msg, 'mine');
+
+//     e.target.value = '';
+// }
+
+async function handleReplyImage(e, commentId, postId) {
+    const files = [...e.target.files];
+    if (!files.length) return;
+
+    const formData = new FormData();
+    formData.append('parent_id', commentId);
+    files.forEach(file => {
+        formData.append('images[]', file);
+    });
+
+    await fetch(`/api/posts/${postId}/comment`, {
+        method: 'POST',
+        headers: {
+            Authorization: 'Bearer ' + token
+        },
+        body: formData
+    });
+
+    e.target.value = '';
+}
+
+// async function uploadVideoReply(e) {
+//     const file = e.target.files[0];
+//     if (!file) return;
+
+//     const formData = new FormData();
+//     formData.append('video', file);
+
+//     const res = await fetch('`/api/posts/${postId}/comment`', {
+//         method: 'POST',
+//         headers: {
+//             Authorization: 'Bearer ' + token
+//         },
+//         body: formData
+//     });
+
+//     const msg = await res.json();
+//     appendMessage(msg, 'mine');
+
+//     e.target.value = '';
+// }
+
+
+
+
+
 function formatContent(text) {
-    return text.replace(
+    return (text || '').replace(
         /@(\w+)/g,
         '<span class="mention">@$1</span>'
     );
 }
-
 
 // Websocket
 socket.on('post:update', post => {

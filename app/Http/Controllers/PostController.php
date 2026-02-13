@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\CommentImage;
 use App\Models\Post;
 use App\Models\PostComment;
 use App\Models\PostImage;
@@ -14,7 +15,7 @@ class PostController extends Controller
 {
     public function index(Request $request)
     {
-        $posts = Post::with(['user', 'images', 'comments.user'])->latest()->simplePaginate(10);
+        $posts = Post::with(['user', 'images', 'comments.user','comments.images','comments.replies.user','comments.replies.images'])->latest()->simplePaginate(10);
 
         $data = collect($posts->items())->map(function ($p) {
             return [
@@ -48,6 +49,9 @@ class PostController extends Controller
                             'user' => $c->user->name,
                             'avatar' => $c->user->avatar,
                             'parent_id' => null,
+                            'images' => $c->images->map(function ($img) {
+                                return asset('storage/' . $img->image_path);
+                            }),
                             'replies' => $c->replies->map(function ($r) {
                                 return [
                                     'id' => $r->id,
@@ -55,6 +59,9 @@ class PostController extends Controller
                                     'user' => $r->user->name,
                                     'avatar' => $r->user->avatar,
                                     'parent_id' => $r->parent_id,
+                                    'images' => $r->images->map(function ($img) {
+                                        return asset('storage/' . $img->image_path);
+                                    }),
                                 ];
                             })
                         ];
@@ -246,9 +253,17 @@ class PostController extends Controller
     public function comment(Request $request, $postId)
     {
         $request->validate([
-            'content' => 'required|string',
-            'parent_id' => 'nullable|exists:post_comments,id'
+            'content'   => 'nullable|string',
+            'parent_id' => 'nullable|exists:post_comments,id',
+            'images'    => 'nullable|array'
         ]);
+
+        if (!$request->content && !$request->hasFile('images')) {
+            return response()->json([
+                'message' => 'Comment cannot be empty'
+            ], 422);
+        }
+
         $parentId = $request->parent_id;
         if ($parentId) {
             $parent = PostComment::find($parentId);
@@ -262,6 +277,20 @@ class PostController extends Controller
             'user_id' => auth()->id(),
             'content' => $request->content
         ]);
+
+        $images = [];
+        if ($request->hasFile('images')) {
+            foreach ($request->file('images') as $file) {
+                $path = $file->store('messages', 'public');
+                CommentImage::create([
+                    'comment_id' => $comment->id,
+                    'user_id' => auth()->id(),
+                    'image_path' => $path
+                ]);
+                $images[] = asset('storage/' . $path);
+            }
+        }
+
         $commentCount = PostComment::where('post_id', $postId)->count();
         $payload = [
             'parent_id' => $comment->parent_id,
@@ -271,7 +300,8 @@ class PostController extends Controller
             'user' => auth()->user()->name,
             'avatar' => auth()->user()->avatar,
             'time' => $comment->created_at->diffForHumans(),
-            'comment_count' => $commentCount
+            'comment_count' => $commentCount,
+            'images'       => $images,
         ];
         Http::post("http://localhost:3000/post-comment", $payload);
         return $payload;
